@@ -262,13 +262,24 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
   html,body{background:#fff!important}
   :root{padding:0}
   body *{visibility:hidden}
-  #qdoc,#qdoc *{visibility:visible}
-  #qdoc{position:absolute;left:0;top:0;width:100%;min-height:0;box-shadow:none;padding:0}
+  #qdoc,#qdoc *,#idoc,#idoc *{visibility:visible}
+  #qdoc,#idoc{position:absolute;left:0;top:0;width:100%;min-height:0;box-shadow:none;padding:0}
   .docwrap{overflow:visible}
 }
 .check{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);font-weight:500;cursor:pointer}
 .check input{width:18px;height:18px;min-width:18px;padding:0;margin:0;accent-color:var(--leaf)}
 input:disabled{opacity:.7}
+.qdoc .amend{border:1.5px solid #111;padding:8px 10px;margin:0 0 16px;font-size:11.5px}
+.qdoc .sums .bal{font-weight:700;font-size:13px;padding:8px 9px;background:#111;color:#fff;margin-top:4px}
+.qdoc .qno .tag{display:inline-block;border:1.5px solid #111;padding:2px 8px;font-size:10.5px;font-weight:700;letter-spacing:.06em;margin-bottom:4px}
+.pill.paid{background:var(--leaf-tint);color:var(--leaf)}
+.pill.due{background:var(--amber-tint);color:var(--amber)}
+.pill.super{background:var(--grey-tint);color:var(--muted)}
+.paybox{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.paybox input{width:140px}
+.revs{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--muted)}
+.revs button{padding:3px 9px;min-height:0;font-size:12.5px}
+.revs button[aria-pressed="true"]{border-color:var(--leaf);color:var(--leaf);font-weight:600}
 </style>
 </head>
 <body>
@@ -302,6 +313,7 @@ input:disabled{opacity:.7}
       <a href="#home" data-nav="home">Home</a>
       <a href="#bookings" data-nav="bookings">Bookings</a>
       <a href="#quotes" data-nav="quotes">Quotes</a>
+      <a href="#invoices" data-nav="invoices">Invoices</a>
     </div>
     <div class="topbar"><span id="who"></span><button id="signOut">Sign out</button></div>
   </nav>
@@ -327,6 +339,12 @@ input:disabled{opacity:.7}
         <h2>Quotes</h2>
         <p class="sub">Build a quote from the price list, send it, and confirm it straight onto the calendar.</p>
         <div class="tilefoot"><span><span class="big" id="t-open">0</span>awaiting reply</span><span class="go">Open quotes →</span></div>
+      </a>
+      <a class="tile" href="#invoices">
+        <p class="eyebrow">Billing</p>
+        <h2>Invoices</h2>
+        <p class="sub">Invoice confirmed quotes, record payments, and send an amended invoice when the client adds items.</p>
+        <div class="tilefoot"><span><span class="big" id="t-due">0</span>with a balance due</span><span class="go">Open invoices →</span></div>
       </a>
     </div>
     <div class="quick"><button class="primary" id="homeNewQuote">New quote</button><button id="homeNewBooking">New booking</button></div>
@@ -449,7 +467,7 @@ input:disabled{opacity:.7}
             </div>
             <div class="row">
               <label>Total quote (P)<input type="number" id="f-total" min="0" step="50" class="money" inputmode="decimal"></label>
-              <label>Deposit received (P)<input type="number" id="f-deposit" min="0" step="50" class="money" inputmode="decimal"></label>
+              <label>Paid to date (P)<input type="number" id="f-deposit" min="0" step="50" class="money" inputmode="decimal"></label>
             </div>
             <p class="hint" id="depHint">A 50% deposit secures the date.</p>
             <p class="linknote" id="quoteLink" hidden></p>
@@ -607,16 +625,16 @@ input:disabled{opacity:.7}
                 <select id="q-status"><option value="draft">Draft (calendar: inquired)</option><option value="sent">Sent (holds the date)</option><option value="confirmed">Confirmed (booking confirmed)</option><option value="declined">Declined (frees the date)</option></select>
               </label>
               <div id="qClash" class="clash" hidden></div>
+              <p class="hint warn" id="qInvNote" hidden></p>
             </div>
           </section>
         </div>
         <section class="panel" id="qItemsPanel"><p class="eyebrow">Line items</p><h3>What's included</h3>
           <div class="items" id="qItems"></div>
           <div class="itemtools">
-            <button type="button" class="primary" id="q-addblank">+ Add line item</button>
-            <select id="q-addprice" aria-label="Add from price list"></select>
+            <select id="q-addprice" aria-label="Add a line item"></select>
           </div>
-          <p class="hint">Type any description and price on a line, or pick from the price list to fill the price in for you.</p>
+          <p class="hint">Pick from the price list to fill the price in for you, or choose “Blank line” to type your own description and price.</p>
           <datalist id="priceOptions"></datalist>
           <div class="row" style="margin-top:14px;align-items:start">
             <label>VAT %<input type="number" id="q-vatrate" min="0" max="100" step="0.5" inputmode="decimal" style="max-width:120px"></label>
@@ -642,12 +660,93 @@ input:disabled{opacity:.7}
         <span style="flex:1"></span>
         <button type="button" id="qdSent">Mark as sent</button>
         <button type="button" class="primary" id="qdConfirm">Confirm booking</button>
+        <button type="button" id="qdInvoice" hidden>Create invoice</button>
         <button type="button" id="qdPrint">Print / save PDF</button>
       </div>
       <p class="linknote" id="qdNote"></p>
       <div class="docwrap"><div class="qdoc" id="qdoc"></div></div>
     </div>
   </div><!-- /quotesView -->
+
+  <!-- ===== Invoices ===== -->
+  <div class="view" id="invoicesView" hidden>
+    <div class="view" id="iListView">
+      <header>
+        <div><h1>Invoices</h1><p class="sub">Create an invoice from a confirmed quote. Amending issues a new revision under the same invoice number.</p></div>
+      </header>
+      <section class="panel list-panel">
+        <div class="list-head">
+          <div><p class="eyebrow">Latest revision of each invoice</p><h3>Invoices</h3></div>
+          <div class="tabs" role="tablist" id="itabs">
+            <button type="button" role="tab" data-itab="all" aria-selected="true">All<span class="c" id="ic-all"></span></button>
+            <button type="button" role="tab" data-itab="due" aria-selected="false">Balance due<span class="c" id="ic-due"></span></button>
+            <button type="button" role="tab" data-itab="paid" aria-selected="false">Paid<span class="c" id="ic-paid"></span></button>
+          </div>
+        </div>
+        <div class="listtools"><input type="search" id="iSearch" placeholder="Search invoice or quote number, client" aria-label="Search invoices"></div>
+        <div class="tablewrap">
+          <table class="btable">
+            <thead><tr><th>Invoice</th><th>Client</th><th>Event date</th><th class="num">Total</th><th class="num">Paid</th><th class="num">Balance</th><th>Status</th><th></th></tr></thead>
+            <tbody id="iBody"></tbody>
+          </table>
+        </div>
+        <div class="bcards" id="iCards"></div>
+        <p class="hint" id="iReady"></p>
+      </section>
+    </div>
+
+    <!-- Amend editor -->
+    <div class="view" id="iEditView" hidden>
+      <header>
+        <div><p class="eyebrow" id="ieEyebrow">Amend invoice</p><h1 id="ieTitle">Amend invoice</h1></div>
+        <button type="button" id="ieBack">← Back to invoice</button>
+      </header>
+      <form id="iForm" novalidate class="view">
+        <section class="panel"><p class="eyebrow">Line items</p><h3>What's being invoiced</h3>
+          <p class="hint">Add what the client asked for on the day, or change quantities to what was actually used. Saving issues the next revision; the previous one is kept for your records.</p>
+          <div class="items" id="iItems"></div>
+          <div class="itemtools">
+            <select id="i-addprice" aria-label="Add a line item"></select>
+          </div>
+          <div class="row" style="margin-top:14px;align-items:start">
+            <div class="row">
+              <label>VAT %<input type="number" id="i-vatrate" min="0" max="100" step="0.5" inputmode="decimal"></label>
+              <label>Due date<input type="date" id="i-due"></label>
+            </div>
+            <div class="qtotals" id="iTotals"></div>
+          </div>
+          <label style="margin-top:12px">Reason for amendment (printed on the invoice)<input id="i-note" placeholder="e.g. Additional drinks and 5 extra guests requested on the day"></label>
+        </section>
+        <div class="stickybar">
+          <button type="submit" class="primary" id="iSave">Issue amended invoice</button>
+          <button type="button" id="iCancel">Cancel</button>
+          <span style="flex:1"></span>
+          <span class="meta" id="iBarTotal"></span>
+        </div>
+      </form>
+    </div>
+
+    <!-- Printable invoice -->
+    <div class="view" id="iDocView" hidden>
+      <div class="docbar">
+        <button type="button" id="idBack">← All invoices</button>
+        <button type="button" id="idQuote">View quote</button>
+        <span style="flex:1"></span>
+        <button type="button" id="idAmend">Amend invoice</button>
+        <button type="button" class="primary" id="idPrint">Print / save PDF</button>
+      </div>
+      <div class="panel" style="display:grid;gap:10px">
+        <div class="revs" id="idRevs"></div>
+        <form class="paybox" id="payForm" novalidate>
+          <label for="payAmt" class="meta">Paid to date (P)</label>
+          <input type="number" id="payAmt" min="0" step="0.01" inputmode="decimal" class="money">
+          <button type="submit">Save payment</button>
+          <span class="meta" id="payNote"></span>
+        </form>
+      </div>
+      <div class="docwrap"><div class="qdoc" id="idoc"></div></div>
+    </div>
+  </div><!-- /invoicesView -->
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -667,7 +766,7 @@ input:disabled{opacity:.7}
   const $ = id => document.getElementById(id);
   const mobile = () => matchMedia("(max-width:860px)").matches;
 
-  let bookings = [], clients = [], staff = [], me = null, isAdmin = false, quotes = [], prices = [];
+  let bookings = [], clients = [], staff = [], me = null, isAdmin = false, quotes = [], prices = [], invoices = [];
   const now = new Date();
   let view = new Date(now.getFullYear(), now.getMonth(), 1);
   let selected = iso(now);
@@ -707,16 +806,18 @@ input:disabled{opacity:.7}
   }
   let rawBookings = [];
   async function loadAll(){
-    const [cb, bb, qb, pb] = await Promise.all([
+    const [cb, bb, qb, pb, ib] = await Promise.all([
       sb.from("clients").select("*").order("name"),
       sb.from("bookings").select("*").order("start_date"),
       sb.from("quotes").select("*").order("created_at", {ascending:false}),
-      sb.from("price_list").select("*").order("sort")
+      sb.from("price_list").select("*").order("sort"),
+      sb.from("invoices").select("*").order("created_at", {ascending:false})
     ]);
-    if(cb.error || bb.error || qb.error || pb.error){ notice("Couldn't load your data. Check your connection and reload."); return; }
-    clients = cb.data; quotes = qb.data; prices = pb.data; rawBookings = bb.data; bookings = rawBookings.map(mapBooking);
+    if(cb.error || bb.error || qb.error || pb.error || ib.error){ notice("Couldn't load your data. Check your connection and reload."); return; }
+    clients = cb.data; quotes = qb.data; prices = pb.data; invoices = ib.data; rawBookings = bb.data; bookings = rawBookings.map(mapBooking);
     notice(""); render(); if(!$("formPanel").hidden) liveCheck(); if(!$("qEditView").hidden) qCheck();
     if(!$("qDocView").hidden && docQuoteId) showDoc(docQuoteId, true);
+    if(!$("iDocView").hidden && docInvId) showInvoice(docInvId, true);
   }
   let reloadT; const scheduleReload = ()=>{ clearTimeout(reloadT); reloadT = setTimeout(loadAll, 300); };
   async function loadStaff(){
@@ -823,7 +924,7 @@ input:disabled{opacity:.7}
   $("listSearch").addEventListener("input", renderList);
   $("listWhen").addEventListener("change", renderList);
 
-  function render(){ renderCal(); renderDay(); renderUpcoming(); renderClients(); renderList(); renderHome(); renderQuotes(); renderPrices(); }
+  function render(){ renderCal(); renderDay(); renderUpcoming(); renderClients(); renderList(); renderHome(); renderQuotes(); renderPrices(); renderInvoices(); }
 
   // ---------- form ----------
   function readForm(){
@@ -1012,6 +1113,7 @@ input:disabled{opacity:.7}
     $("t-upcoming").textContent = live.filter(b=>b.end>=today).length;
     const sent = quotes.filter(q=>q.status==="sent");
     $("t-open").textContent = sent.length;
+    $("t-due").textContent = invoices.filter(i=>i.status==="current" && invBalance(i) > 0.005).length;
     $("k-sent").textContent = pula(sent.reduce((a,q)=>a+Number(q.total),0));
     $("k-sent-n").textContent = `${sent.length} quote${sent.length===1?"":"s"} sent, not yet confirmed`;
     const owing = bookings.filter(b=>b.status==="confirmed" && b.end>=today && b.total && b.deposit < b.total/2);
@@ -1031,12 +1133,13 @@ input:disabled{opacity:.7}
   // ================= ROUTING =================
   function route(){
     const v = (location.hash||"#home").slice(1);
-    const view = ["home","bookings","quotes"].includes(v) ? v : "home";
-    $("homeView").hidden = view!=="home"; $("bookingsView").hidden = view!=="bookings"; $("quotesView").hidden = view!=="quotes";
+    const view = ["home","bookings","quotes","invoices"].includes(v) ? v : "home";
+    $("homeView").hidden = view!=="home"; $("bookingsView").hidden = view!=="bookings"; $("quotesView").hidden = view!=="quotes"; $("invoicesView").hidden = view!=="invoices";
     document.querySelectorAll("[data-nav]").forEach(a=>a.setAttribute("aria-current", a.dataset.nav===view ? "page" : "false"));
     if(view!=="bookings") closeForm();
     if(view==="quotes" && $("qEditView").hidden && $("qDocView").hidden) showQList();
-    document.title = (view==="home" ? "" : (view==="bookings"?"Bookings":"Quotes")+" · ") + "Base Bush Lounge";
+    if(view==="invoices" && $("iEditView").hidden && $("iDocView").hidden) showIList();
+    document.title = (view==="home" ? "" : ({bookings:"Bookings",quotes:"Quotes",invoices:"Invoices"})[view]+" · ") + "Base Bush Lounge";
   }
   window.addEventListener("hashchange", ()=>{ route(); window.scrollTo(0,0); });
   const go = v => { if(location.hash!=="#"+v) location.hash = v; else route(); };
@@ -1087,7 +1190,7 @@ input:disabled{opacity:.7}
   function renderPrices(){
     const act = prices.filter(p=>p.active);
     const cats = [...new Set(act.map(p=>p.category))];
-    $("q-addprice").innerHTML = `<option value="">+ Add item from price list…</option>` + cats.map(c=>`<optgroup label="${esc(c)}">${
+    $("q-addprice").innerHTML = `<option value="">+ Add line item…</option><option value="__blank">Blank line (type your own)</option>` + cats.map(c=>`<optgroup label="${esc(c)}">${
       act.filter(p=>p.category===c).map(p=>`<option value="${esc(p.id)}">${esc(p.description)} — P ${qm(p.unit_price)}</option>`).join("")}</optgroup>`).join("");
     $("priceOptions").innerHTML = act.map(p=>`<option value="${esc(p.description)}"></option>`).join("");
     $("priceForm").hidden = !isAdmin;
@@ -1135,6 +1238,9 @@ input:disabled{opacity:.7}
     $("q-guests").value = q?.guests_text || opts.guests || ""; $("q-date").value = q?.quote_date || iso(new Date()); $("q-valid").value = q?.valid_days || 30;
     $("q-status").value = q?.status || opts.status || "draft"; $("q-vatrate").value = q ? Number(q.vat_rate) : 0; $("q-notes").value = q?.notes||"";
     qItems = q ? (q.items||[]).map(i=>({qty:Number(i.qty)||0, description:i.description||"", unit_price:Number(i.unit_price)||0})) : [{qty:1, description:"", unit_price:0}];
+    const qi = q && invoices.find(x=>x.quote_id===q.id && x.status==="current");
+    $("qInvNote").hidden = !qi;
+    if(qi) $("qInvNote").textContent = `This quote has been invoiced as ${qi.invoice_no}. For items added on the day, amend the invoice instead so the client gets an amended invoice.`;
     renderItems(); qCheck(); window.scrollTo(0,0);
   }
   function renderItems(){
@@ -1145,7 +1251,7 @@ input:disabled{opacity:.7}
         <input class="pr money" type="number" min="0" step="0.01" inputmode="decimal" value="${it.unit_price}" data-f="unit_price" aria-label="Unit price">
         <span class="amt" data-amt="${i}">${qm(it.qty*it.unit_price)}</span>
         <button type="button" class="ghost rm" data-rm="${i}" aria-label="Remove line">✕</button></div>`).join("")
-      : `<div class="empty">No line items yet. Press “+ Add line item” or pick from the price list.</div>`);
+      : `<div class="empty">No line items yet. Use “+ Add line item” below.</div>`);
     qTotals();
   }
   function qTotals(){
@@ -1163,7 +1269,10 @@ input:disabled{opacity:.7}
   });
   $("qItems").addEventListener("click", e=>{ const b=e.target.closest("[data-rm]"); if(!b) return; qItems.splice(+b.dataset.rm,1); renderItems(); });
   $("q-addprice").addEventListener("change", ()=>{
-    const p = prices.find(x=>x.id===$("q-addprice").value); $("q-addprice").value=""; if(!p) return;
+    const val = $("q-addprice").value; $("q-addprice").value="";
+    if(val==="__blank"){ qItems.push({qty:1, description:"", unit_price:0}); renderItems();
+      const rows = $("qItems").querySelectorAll(".irow:not(.head)"); rows[rows.length-1]?.querySelector(".d")?.focus(); return; }
+    const p = prices.find(x=>x.id===val); if(!p) return;
     const guests = parseInt(($("q-guests").value.match(/(\d+)\D*$/)||[])[1]) || 1;
     const perHead = /per person|buffet|lunch|dinner|breakfast/i.test(p.description);
     const blank = qItems.findIndex(i=>!i.description.trim() && !i.unit_price);
@@ -1171,8 +1280,6 @@ input:disabled{opacity:.7}
     if(blank>=0) qItems[blank] = item; else qItems.push(item);
     renderItems();
   });
-  $("q-addblank").onclick = ()=>{ qItems.push({qty:1, description:"", unit_price:0}); renderItems();
-    const rows = $("qItems").querySelectorAll(".irow:not(.head)"); rows[rows.length-1]?.querySelector(".d")?.focus(); };
   $("q-vatrate").addEventListener("input", qTotals);
   $("qeJump").onclick = ()=>$("qItemsPanel").scrollIntoView({behavior:"smooth", block:"start"});
 
@@ -1234,30 +1341,39 @@ input:disabled{opacity:.7}
   $("newQuoteBtn").onclick = ()=>openQuote(null);
 
   // ---- printable quote ----
+  const BBL_TEL = "+267 77 410 686", BBL_EMAIL = "Bookings@basebushlounge.com";
+  function docParties(c){
+    const to = [c.company && c.name && c.company!==c.name ? `Attn: ${c.name}` : "", c.vat_number ? `VAT: ${c.vat_number}` : "", c.address, c.postal_address,
+      c.phone ? `Tel: ${c.phone}` : "", c.email ? `Email: ${c.email}` : ""].filter(Boolean).map(esc).join("<br>");
+    return `<div class="parties">
+      <div><b>Base Bush Lounge</b><br>Mokolodi, Gaborone, Botswana<br>Tel: ${BBL_TEL}<br>Email: ${BBL_EMAIL}<br>www.basebushlounge.com</div>
+      <div><b>To: ${esc(c.company||c.name||"")}</b>${to?"<br>"+to:""}</div></div>`;
+  }
+  function docEvent(q,c){
+    return `<table class="evt"><thead><tr><th>End client</th><th>Venue</th><th>Event date</th><th class="c">No. of guests</th><th class="c">Days</th></tr></thead>
+      <tbody><tr><td>${esc(q.end_client||c.company||c.name||"")}</td><td>Base Bush Lounge - Mokolodi${q.area!=="Entire venue"?`<br>(${esc(q.area)})`:""}</td>
+      <td>${esc(qDates(q))}</td><td class="c">${esc(q.guests_text||"—")}</td><td class="c">${qDays(q)}</td></tr></tbody></table>`;
+  }
+  function docLines(items){
+    return `<table class="lines"><thead><tr><th class="c" style="width:80px">Quantity</th><th>Description</th><th class="r" style="width:120px">Unit price</th><th class="r" style="width:120px">Amount</th></tr></thead>
+      <tbody>${items.length ? items.map(i=>`<tr><td class="c">${qtyFmt(i.qty)}</td><td>${esc(i.description)}</td><td class="r">${qm(i.unit_price)}</td><td class="r">${qm(Number(i.qty)*Number(i.unit_price))}</td></tr>`).join("")
+        : `<tr><td colspan="4" class="c" style="color:#777">No line items</td></tr>`}</tbody></table>`;
+  }
+  const DOC_BANK = `<div class="bank"><div class="h">Base Bush Lounge banking details</div>
+    <dl><dt>Bank</dt><dd>First National Bank (FNB)</dd><dt>Branch</dt><dd>Main Branch</dd><dt>Account number</dt><dd>63128295804</dd></dl></div>`;
+  const DOC_FOOT = `<div class="foot">Base Bush Lounge · Mokolodi · Tel ${BBL_TEL} · ${BBL_EMAIL} · www.basebushlounge.com</div>`;
+
   function showDoc(id, quiet){
     const q = quotes.find(x=>x.id===id); if(!q) return;
     docQuoteId = id;
     $("qListView").hidden = true; $("qEditView").hidden = true; $("qDocView").hidden = false;
     const c = qClient(q), b = bookings.find(x=>x.id===q.booking_id);
-    const to = [c.company && c.name && c.company!==c.name ? `Attn: ${c.name}` : "", c.vat_number ? `VAT: ${c.vat_number}` : "", c.address, c.postal_address,
-      c.phone ? `Tel: ${c.phone}` : "", c.email ? `Email: ${c.email}` : ""].filter(Boolean).map(esc).join("<br>");
-    const items = (q.items||[]);
     $("qdoc").innerHTML = `
       <div class="qtop"><img src="logo.png" alt="Base Bush Lounge">
         <div class="qno"><h2>QUOTATION NO: ${esc(q.quote_no)}</h2>${q.client_ref?`<div><b>CLIENT REF: ${esc(q.client_ref)}</b></div>`:""}<div>DATE: ${q.quote_date.replace(/-/g,"/")}</div></div></div>
-      <div class="parties">
-        <div><b>Base Bush Lounge</b><br>Mokolodi, Gaborone, Botswana<br>www.basebushlounge.com</div>
-        <div><b>To: ${esc(c.company||c.name||"")}</b>${to?"<br>"+to:""}</div>
-      </div>
-      <table class="evt"><thead><tr><th>End client</th><th>Venue</th><th>Event date</th><th class="c">No. of guests</th><th class="c">Days</th></tr></thead>
-        <tbody><tr><td>${esc(q.end_client||c.company||c.name||"")}</td><td>Base Bush Lounge - Mokolodi${q.area!=="Entire venue"?`<br>(${esc(q.area)})`:""}</td>
-        <td>${esc(qDates(q))}</td><td class="c">${esc(q.guests_text||"—")}</td><td class="c">${qDays(q)}</td></tr></tbody></table>
-      <table class="lines"><thead><tr><th class="c" style="width:80px">Quantity</th><th>Description</th><th class="r" style="width:120px">Unit price</th><th class="r" style="width:120px">Amount</th></tr></thead>
-        <tbody>${items.length ? items.map(i=>`<tr><td class="c">${qtyFmt(i.qty)}</td><td>${esc(i.description)}</td><td class="r">${qm(i.unit_price)}</td><td class="r">${qm(Number(i.qty)*Number(i.unit_price))}</td></tr>`).join("")
-          : `<tr><td colspan="4" class="c" style="color:#777">No line items</td></tr>`}</tbody></table>
+      ${docParties(c)}${docEvent(q,c)}${docLines(q.items||[])}
       <div class="bottom">
-        <div class="bank"><div class="h">Base Bush Lounge banking details</div>
-          <dl><dt>Bank</dt><dd>First National Bank (FNB)</dd><dt>Branch</dt><dd>Main Branch</dd><dt>Account number</dt><dd>63128295804</dd></dl></div>
+        ${DOC_BANK}
         <div class="sums"><div><span>SUBTOTAL</span><span>${qm(q.subtotal)}</span></div><div><span>VAT${Number(q.vat_rate)?` (${Number(q.vat_rate)}%)`:""}</span><span>${qm(q.vat_amount)}</span></div>
           <div class="tot"><span>TOTAL</span><span>P${qm(q.total)}</span></div></div>
       </div>
@@ -1266,9 +1382,13 @@ input:disabled{opacity:.7}
         <li>A 50% deposit is required to secure the booking date.</li>
         <li>Balance is payable before the event date.</li>
         <li>Final guest numbers to be confirmed at least 3 days before the event; charges are based on confirmed numbers.</li></ol></div>
-      <div class="foot">Base Bush Lounge · Mokolodi · www.basebushlounge.com</div>`;
+      ${DOC_FOOT}`;
+    const inv = invoices.find(x=>x.quote_id===q.id && x.status==="current");
+    $("qdInvoice").hidden = !(inv || q.status==="confirmed");
+    $("qdInvoice").textContent = inv ? `View invoice ${inv.invoice_no}` : "Create invoice";
+    $("qdInvoice").className = inv ? "" : "primary";
     const dep = b ? ` Deposit received ${pula(b.deposit)} of ${pula(q.total/2)} due.` : "";
-    $("qdNote").innerHTML = `<span class="pill ${q.status}">${QSTAT[q.status]}</span> ${b ? `On the calendar as <b>${STAT[b.status].toLowerCase()}</b>.${q.status==="confirmed"?dep:""} <button type="button" data-gocal="${esc(b.id)}">Show on calendar</button>` : ""}`;
+    $("qdNote").innerHTML = `<span class="pill ${q.status}">${QSTAT[q.status]}</span> ${inv ? `Invoiced as <b>${esc(inv.invoice_no)}</b>${inv.revision>1?` (revision ${inv.revision})`:""}. ` : ""}${b ? `On the calendar as <b>${STAT[b.status].toLowerCase()}</b>.${q.status==="confirmed"?dep:""} <button type="button" data-gocal="${esc(b.id)}">Show on calendar</button>` : ""}`;
     $("qdSent").hidden = q.status!=="draft"; $("qdConfirm").hidden = q.status==="confirmed" || q.status==="declined";
     if(!quiet) window.scrollTo(0,0);
   }
@@ -1290,6 +1410,7 @@ input:disabled{opacity:.7}
 
   document.addEventListener("click", async e=>{
     const nv = e.target.closest('[data-nav="quotes"]'); if(nv && location.hash==="#quotes"){ showQList(); return; }
+    const ni = e.target.closest('[data-nav="invoices"]'); if(ni && location.hash==="#invoices"){ showIList(); return; }
     const vq = e.target.closest("[data-viewq]"); if(vq){ showDoc(vq.dataset.viewq); return; }
     const eq = e.target.closest("[data-editq]"); if(eq){ openQuote(quotes.find(x=>x.id===eq.dataset.editq)); return; }
     const oq = e.target.closest("[data-openquote]"); if(oq){ const id=oq.dataset.openquote; go("quotes"); showDoc(id); return; }
@@ -1304,6 +1425,174 @@ input:disabled{opacity:.7}
       if(!pd.dataset.armed){ pd.dataset.armed="1"; pd.textContent="Tap to confirm"; pd.classList.add("danger"); return; }
       const r = await sb.from("price_list").update({active:false}).eq("id", pd.dataset.pdel);
       if(!r.error){ await sb.from("price_list").delete().eq("id", pd.dataset.pdel); toast("Removed from price list"); loadAll(); } else toast("Couldn't remove: "+r.error.message); return; }
+  });
+
+
+  // ================= INVOICES =================
+  let iTab = "all", docInvId = null, iItems = [], iAmendingId = null;
+  const invBooking = i => bookings.find(b=>b.id===i.booking_id);
+  const invPaid = i => Number(invBooking(i)?.deposit || 0);
+  const invBalance = i => Math.round((Number(i.total) - invPaid(i))*100)/100;
+  const invQuote = i => quotes.find(q=>q.id===i.quote_id) || {};
+  function showIList(){ $("iListView").hidden=false; $("iEditView").hidden=true; $("iDocView").hidden=true; docInvId=null; iAmendingId=null; }
+
+  function renderInvoices(){
+    const q = $("iSearch").value.trim().toLowerCase();
+    const cur = invoices.filter(i=>i.status==="current").filter(i=>{ if(!q) return true; const c = clientById(i.client_id)||{};
+      return [i.invoice_no, invQuote(i).quote_no, c.name, c.company, invQuote(i).end_client].some(v=>(v||"").toLowerCase().includes(q)); });
+    const due = cur.filter(i=>invBalance(i) > 0.005), paid = cur.filter(i=>invBalance(i) <= 0.005);
+    $("ic-all").textContent = cur.length; $("ic-due").textContent = due.length; $("ic-paid").textContent = paid.length;
+    const list = (iTab==="due" ? due : iTab==="paid" ? paid : cur).slice().sort((a,b)=>(invQuote(a).start_date||"").localeCompare(invQuote(b).start_date||""));
+    const ready = quotes.filter(x=>x.status==="confirmed" && !invoices.some(i=>i.quote_id===x.id && i.status==="current"));
+    $("iReady").innerHTML = ready.length ? `Confirmed quotes not yet invoiced: ${ready.map(x=>`<button type="button" data-mkinv="${esc(x.id)}" style="padding:2px 8px;min-height:0">${esc(x.quote_no)} · ${esc((clientById(x.client_id)||{}).company || (clientById(x.client_id)||{}).name || "")}</button>`).join(" ")}` : "";
+    const empty = `<div class="empty">${q ? "No invoices match that search." : "No invoices yet. Open a confirmed quote and press “Create invoice”."}</div>`;
+    const st = i => invBalance(i) > 0.005 ? `<span class="pill due">Balance due</span>` : `<span class="pill paid">Paid</span>`;
+    const name = i => { const c = clientById(i.client_id)||{}; return esc(c.company || c.name || "—"); };
+    $("iBody").innerHTML = list.length ? list.map(i=>`<tr>
+      <td style="white-space:nowrap"><strong>${esc(i.invoice_no)}</strong><div class="sub2">${i.revision>1?`Amended · rev ${i.revision}`:"Original"} · ${esc(invQuote(i).quote_no||"")}</div></td>
+      <td>${name(i)}</td><td style="white-space:nowrap">${invQuote(i).start_date ? esc(qDates(invQuote(i))) : "—"}</td>
+      <td class="num">${pula(i.total)}</td><td class="num">${pula(invPaid(i))}</td><td class="num">${pula(Math.max(0,invBalance(i)))}</td>
+      <td>${st(i)}</td>
+      <td style="white-space:nowrap"><button type="button" data-viewi="${esc(i.id)}">View</button> <button type="button" data-amendi="${esc(i.id)}">Amend</button></td></tr>`).join("")
+      : `<tr><td colspan="8">${empty}</td></tr>`;
+    $("iCards").innerHTML = list.length ? list.map(i=>`<div class="bcard">
+      <div class="top"><strong>${esc(i.invoice_no)} · ${name(i)}</strong>${st(i)}</div>
+      <div class="meta">${i.revision>1?`Amended · rev ${i.revision}`:"Original"} · ${invQuote(i).start_date ? esc(qDates(invQuote(i))) : ""}</div>
+      <div class="meta">Total ${pula(i.total)} · paid ${pula(invPaid(i))} · balance ${pula(Math.max(0,invBalance(i)))}</div>
+      <div class="actions"><button type="button" data-viewi="${esc(i.id)}">View</button><button type="button" data-amendi="${esc(i.id)}">Amend</button></div></div>`).join("") : empty;
+  }
+  $("itabs").addEventListener("click", e=>{ const t=e.target.closest("[data-itab]"); if(!t) return; iTab=t.dataset.itab;
+    $("itabs").querySelectorAll("[data-itab]").forEach(x=>x.setAttribute("aria-selected", x===t?"true":"false")); renderInvoices(); });
+  $("iSearch").addEventListener("input", renderInvoices);
+
+  async function createInvoice(quoteId){
+    const r = await sb.rpc("create_invoice", {p_quote: quoteId});
+    if(r.error){ toast("Couldn't create the invoice: " + r.error.message); return; }
+    toast(`${r.data.invoice_no} created`);
+    await loadAll(); go("invoices"); showInvoice(r.data.id);
+  }
+  $("qdInvoice").onclick = ()=>{
+    const q = quotes.find(x=>x.id===docQuoteId); if(!q) return;
+    const inv = invoices.find(x=>x.quote_id===q.id && x.status==="current");
+    if(inv){ go("invoices"); showInvoice(inv.id); } else createInvoice(q.id);
+  };
+
+  function showInvoice(id, quiet){
+    const i = invoices.find(x=>x.id===id); if(!i) return;
+    docInvId = id;
+    $("iListView").hidden = true; $("iEditView").hidden = true; $("iDocView").hidden = false;
+    const q = invQuote(i), c = clientById(i.client_id)||{}, b = invBooking(i);
+    const paid = invPaid(i), bal = Math.round((Number(i.total)-paid)*100)/100;
+    const revs = invoices.filter(x=>x.invoice_no===i.invoice_no).sort((a,b)=>a.revision-b.revision);
+    const prev = revs.find(x=>x.revision===i.revision-1);
+    const isCurrent = i.status==="current";
+    const evq = {...q, start_date:q.start_date||i.invoice_date, end_date:q.end_date||i.invoice_date};
+    $("idoc").innerHTML = `
+      <div class="qtop"><img src="logo.png" alt="Base Bush Lounge">
+        <div class="qno">${i.revision>1?`<div class="tag">AMENDED INVOICE · REVISION ${i.revision}</div>`:""}<h2>INVOICE NO: ${esc(i.invoice_no)}</h2>
+          <div><b>QUOTE REF: ${esc(q.quote_no||"")}</b></div>${q.client_ref?`<div><b>CLIENT REF: ${esc(q.client_ref)}</b></div>`:""}
+          <div>DATE: ${i.invoice_date.replace(/-/g,"/")}</div>${i.due_date?`<div>DUE DATE: ${i.due_date.replace(/-/g,"/")}</div>`:""}</div></div>
+      ${docParties(c)}
+      ${i.revision>1 ? `<div class="amend"><b>Amended invoice.</b> This revision replaces revision ${i.revision-1}${prev?` dated ${prev.invoice_date.replace(/-/g,"/")} (total P${qm(prev.total)})`:""}.${i.amendment_note?` Reason: ${esc(i.amendment_note)}`:""}</div>` : ""}
+      ${docEvent(evq,c)}${docLines(i.items||[])}
+      <div class="bottom">
+        ${DOC_BANK}
+        <div class="sums"><div><span>SUBTOTAL</span><span>${qm(i.subtotal)}</span></div><div><span>VAT${Number(i.vat_rate)?` (${Number(i.vat_rate)}%)`:""}</span><span>${qm(i.vat_amount)}</span></div>
+          <div class="tot"><span>TOTAL</span><span>P${qm(i.total)}</span></div>
+          <div style="padding:6px 9px 0"><span>LESS: PAID TO DATE</span><span>${qm(paid)}</span></div>
+          <div class="bal"><span>BALANCE DUE</span><span>P${qm(Math.max(0,bal))}</span></div></div>
+      </div>
+      <div class="terms"><h4>Payment terms</h4><ol>
+        <li>Please use the invoice number <b>${esc(i.invoice_no)}</b> as your payment reference.</li>
+        <li>The balance is payable before the event date${i.due_date?` (${nice(i.due_date,{day:"numeric",month:"long",year:"numeric"})})`:""}.</li>
+        <li>Additional items requested on the day are billed on an amended invoice.</li>
+        <li>Queries: ${BBL_TEL} · ${BBL_EMAIL}</li></ol></div>
+      ${DOC_FOOT}`;
+    $("idRevs").innerHTML = (revs.length>1 ? `<span>Revisions:</span>${revs.map(r=>`<button type="button" data-viewi="${esc(r.id)}" aria-pressed="${r.id===i.id}">Rev ${r.revision}${r.status==="current"?" (latest)":""} · P ${qm(r.total)}</button>`).join("")}`
+      : `<span>Original invoice · created ${nice(i.invoice_date,{day:"numeric",month:"short",year:"numeric"})}</span>`)
+      + (isCurrent ? "" : ` <span class="pill super">Superseded. Send the latest revision to the client.</span>`);
+    $("idAmend").hidden = !isCurrent; $("payForm").hidden = !b;
+    $("payAmt").value = paid || ""; 
+    $("payNote").textContent = b ? `Balance due ${pula(Math.max(0,bal))}${bal < -0.005 ? ` · overpaid by ${pula(-bal)}` : ""}` : "";
+    if(!quiet) window.scrollTo(0,0);
+  }
+  $("payForm").addEventListener("submit", async e=>{
+    e.preventDefault();
+    const i = invoices.find(x=>x.id===docInvId); if(!i?.booking_id) return;
+    const r = await sb.from("bookings").update({deposit: Number($("payAmt").value||0)}).eq("id", i.booking_id);
+    toast(r.error ? "Couldn't save: "+r.error.message : "Payment saved"); if(!r.error){ await loadAll(); showInvoice(i.id, true); }
+  });
+  $("idPrint").onclick = ()=>window.print();
+  $("idBack").onclick = ()=>{ showIList(); window.scrollTo(0,0); };
+  $("idQuote").onclick = ()=>{ const i = invoices.find(x=>x.id===docInvId); if(!i) return; go("quotes"); showDoc(i.quote_id); };
+  $("idAmend").onclick = ()=>openAmend(docInvId);
+
+  // ---- amend editor ----
+  function openAmend(id){
+    const i = invoices.find(x=>x.id===id); if(!i) return;
+    if(i.status!=="current"){ toast("Only the latest revision can be amended."); return; }
+    iAmendingId = id;
+    $("iListView").hidden = true; $("iDocView").hidden = true; $("iEditView").hidden = false;
+    $("ieEyebrow").textContent = `${i.invoice_no} · currently revision ${i.revision}`;
+    $("ieTitle").textContent = `Amend ${i.invoice_no}`;
+    $("iSave").textContent = `Issue amended invoice (revision ${i.revision+1})`;
+    iItems = (i.items||[]).map(x=>({qty:Number(x.qty)||0, description:x.description||"", unit_price:Number(x.unit_price)||0}));
+    $("i-vatrate").value = Number(i.vat_rate); $("i-due").value = i.due_date || ""; $("i-note").value = "";
+    $("i-addprice").innerHTML = $("q-addprice").innerHTML;
+    renderIItems(); window.scrollTo(0,0);
+  }
+  function renderIItems(){
+    $("iItems").innerHTML = `<div class="irow head"><span>Qty</span><span>Description</span><span>Unit price (P)</span><span style="text-align:right">Amount</span><span></span></div>` +
+      (iItems.length ? iItems.map((it,i)=>`<div class="irow" data-ii="${i}">
+        <input class="q" type="number" min="0" step="1" inputmode="decimal" value="${it.qty}" data-f="qty" aria-label="Quantity">
+        <input class="d" value="${esc(it.description)}" data-f="description" list="priceOptions" placeholder="Description" aria-label="Description">
+        <input class="pr money" type="number" min="0" step="0.01" inputmode="decimal" value="${it.unit_price}" data-f="unit_price" aria-label="Unit price">
+        <span class="amt">${qm(it.qty*it.unit_price)}</span>
+        <button type="button" class="ghost rm" data-irm="${i}" aria-label="Remove line">✕</button></div>`).join("")
+      : `<div class="empty">No line items. Use “+ Add line item” below.</div>`);
+    iTotals();
+  }
+  function iTotals(){
+    const sub = iItems.reduce((a,i)=>a+Math.round(i.qty*i.unit_price*100)/100,0);
+    const vr = Number($("i-vatrate").value||0), vat = Math.round(sub*vr)/100;
+    const old = invoices.find(x=>x.id===iAmendingId), diff = old ? sub+vat-Number(old.total) : 0;
+    $("iTotals").innerHTML = `<span>Subtotal</span><span>P ${qm(sub)}</span><span>VAT ${vr?`(${vr}%)`:""}</span><span>P ${qm(vat)}</span><span class="t">New total</span><span class="t">P ${qm(sub+vat)}</span>`
+      + (old ? `<span class="meta">Change</span><span class="meta">${diff>=0?"+":"−"} P ${qm(Math.abs(diff))}</span>` : "");
+    $("iBarTotal").textContent = `New total P ${qm(sub+vat)}`;
+  }
+  $("iItems").addEventListener("input", e=>{
+    const row = e.target.closest("[data-ii]"); if(!row) return; const i = +row.dataset.ii, f = e.target.dataset.f;
+    iItems[i][f] = f==="description" ? e.target.value : Number(e.target.value||0);
+    if(f==="description"){ const p = prices.find(x=>x.active && x.description===e.target.value);
+      if(p && !iItems[i].unit_price){ iItems[i].unit_price = Number(p.unit_price); row.querySelector('[data-f="unit_price"]').value = Number(p.unit_price); } }
+    row.querySelector(".amt").textContent = qm(iItems[i].qty*iItems[i].unit_price); iTotals();
+  });
+  $("iItems").addEventListener("click", e=>{ const b=e.target.closest("[data-irm]"); if(!b) return; iItems.splice(+b.dataset.irm,1); renderIItems(); });
+  $("i-addprice").addEventListener("change", ()=>{
+    const val = $("i-addprice").value; $("i-addprice").value="";
+    if(val==="__blank"){ iItems.push({qty:1, description:"", unit_price:0}); renderIItems();
+      const rows = $("iItems").querySelectorAll(".irow:not(.head)"); rows[rows.length-1]?.querySelector(".d")?.focus(); return; }
+    const p = prices.find(x=>x.id===val); if(!p) return;
+    iItems.push({qty:1, description:p.description, unit_price:Number(p.unit_price)}); renderIItems();
+  });
+  $("i-vatrate").addEventListener("input", iTotals);
+  $("iForm").addEventListener("submit", async e=>{
+    e.preventDefault();
+    const items = iItems.filter(i=>i.description.trim() || i.unit_price).map(i=>({qty:i.qty, description:i.description.trim(), unit_price:i.unit_price}));
+    $("iSave").disabled = true;
+    const r = await sb.rpc("amend_invoice", {p_invoice:iAmendingId, p_items:items, p_vat_rate:Number($("i-vatrate").value||0),
+      p_due:$("i-due").value || null, p_note:$("i-note").value.trim()});
+    $("iSave").disabled = false;
+    if(r.error){ toast("Couldn't amend: " + r.error.message); return; }
+    toast(`${r.data.invoice_no} revision ${r.data.revision} issued`);
+    iAmendingId = null; await loadAll(); showInvoice(r.data.id);
+  });
+  $("iCancel").onclick = $("ieBack").onclick = ()=>{ const id = iAmendingId; iAmendingId = null; if(id) showInvoice(id); else showIList(); };
+
+  document.addEventListener("click", e=>{
+    const vi = e.target.closest("[data-viewi]"); if(vi){ showInvoice(vi.dataset.viewi); return; }
+    const ai = e.target.closest("[data-amendi]"); if(ai){ openAmend(ai.dataset.amendi); return; }
+    const mk = e.target.closest("[data-mkinv]"); if(mk){ createInvoice(mk.dataset.mkinv); return; }
   });
 
   // ---------- auth ----------
@@ -1333,6 +1622,7 @@ input:disabled{opacity:.7}
       .on("postgres_changes",{event:"*",schema:"public",table:"bookings"}, scheduleReload)
       .on("postgres_changes",{event:"*",schema:"public",table:"clients"}, scheduleReload)
       .on("postgres_changes",{event:"*",schema:"public",table:"quotes"}, scheduleReload)
+      .on("postgres_changes",{event:"*",schema:"public",table:"invoices"}, scheduleReload)
       .subscribe();
     document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) scheduleReload(); });
   }
