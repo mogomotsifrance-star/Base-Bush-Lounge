@@ -130,10 +130,11 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
 @media (max-width:860px){
   input,select,textarea{font-size:16px;padding:10px}
   button{min-height:40px}
-  #formPanel{position:fixed;inset:0;z-index:30;border-radius:0;border:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  #formPanel,#viewPanel{position:fixed;inset:0;z-index:30;border-radius:0;border:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
     padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(28px + env(safe-area-inset-bottom,0px));
     padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
   body.sheet{overflow:hidden}
+  #viewPanel .actions{position:sticky;bottom:calc(-28px - env(safe-area-inset-bottom,0px));background:var(--surface);padding-block:10px;border-top:1px solid var(--line)}
   #formPanel .actions{position:sticky;bottom:calc(-28px - env(safe-area-inset-bottom,0px));background:var(--surface);padding-block:10px;border-top:1px solid var(--line)}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -349,6 +350,16 @@ input:disabled{opacity:.7}
 .auth.panel{border-top:4px solid var(--leaf);position:relative;overflow:hidden}
 .auth.panel::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:linear-gradient(90deg,var(--gold),var(--ochre) 40%,var(--slate) 75%,var(--hero-b))}
 .auth-logo{width:96px;height:auto;filter:var(--logo-filter)}
+.vgrid{display:grid;gap:14px;margin-top:12px}
+.vsec{display:grid;gap:6px}
+.vsec h4{margin:0;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--c,var(--leaf));font-weight:600}
+.vlist{display:grid;grid-template-columns:120px minmax(0,1fr);gap:4px 12px;margin:0}
+.vlist dt{color:var(--muted);font-size:12.5px}
+.vlist dd{margin:0;overflow-wrap:anywhere}
+.vmoney{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.vmoney div{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:grid}
+.vmoney b{font-variant-numeric:tabular-nums}
+.vnotes{white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:0}
 </style>
 </head>
 <body>
@@ -479,6 +490,21 @@ input:disabled{opacity:.7}
         <p class="eyebrow">Selected date</p>
         <div class="actions"><h3 id="dayLabel">—</h3><span class="spacer"></span><button class="primary" id="newBtn">Book this date</button></div>
         <div class="agenda" id="agenda"></div>
+      </section>
+
+      <section class="panel" id="viewPanel" hidden>
+        <div class="sheethead">
+          <div><p class="eyebrow">Booking</p><h3 id="vTitle">Booking</h3></div>
+          <button type="button" class="ghost x" id="vClose" aria-label="Close booking details">✕</button>
+        </div>
+        <div class="vgrid" id="vBody"></div>
+        <div class="actions" style="margin-top:14px">
+          <button type="button" class="primary" id="vEdit">Edit booking</button>
+          <button type="button" id="vQuote">Create quote</button>
+          <button type="button" id="vInvoice" hidden>View invoice</button>
+          <span class="spacer"></span>
+          <button type="button" id="vClose2">Close</button>
+        </div>
       </section>
 
       <section class="panel" id="formPanel" hidden>
@@ -888,7 +914,8 @@ input:disabled{opacity:.7}
     ]);
     if(cb.error || bb.error || qb.error || pb.error || ib.error){ notice("Couldn't load your data. Check your connection and reload."); return; }
     clients = cb.data; quotes = qb.data; prices = pb.data; invoices = ib.data; rawBookings = bb.data; bookings = rawBookings.map(mapBooking);
-    notice(""); render(); if(!$("formPanel").hidden) liveCheck(); if(!$("qEditView").hidden) qCheck();
+    notice(""); render(); if(!$("formPanel").hidden) liveCheck();
+    if(viewId && !$("viewPanel").hidden){ const vb = bookings.find(x=>x.id===viewId); if(vb) openView(vb, true); else closeView(); } if(!$("qEditView").hidden) qCheck();
     if(!$("qDocView").hidden && docQuoteId) showDoc(docQuoteId, true);
     if(!$("iDocView").hidden && docInvId) showInvoice(docInvId, true);
   }
@@ -1035,11 +1062,54 @@ input:disabled{opacity:.7}
     $("f-total").disabled = !!b?.quoteId;
     $("mkQuoteBtn").textContent = b?.quoteId ? `Open quote ${b.quoteNo}` : "Create quote";
     if(b?.quoteId) ql.innerHTML = `Linked to quote <b>${esc(b.quoteNo)}</b>. The total comes from the quote; status and dates stay in step both ways. <button type="button" data-openquote="${esc(b.quoteId)}">Open quote</button>`;
+    $("viewPanel").hidden = true; viewId = null;
     $("formPanel").hidden = false; liveCheck();
     if(mobile()){ document.body.classList.add("sheet"); $("formPanel").scrollTop = 0; }
     else { $("formPanel").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth", block:"nearest"}); $("f-client").focus({preventScroll:true}); }
   }
-  function closeForm(){ $("formPanel").hidden = true; editingId = null; clientId = null; document.body.classList.remove("sheet"); }
+  function closeForm(){ $("formPanel").hidden = true; editingId = null; clientId = null; if($("viewPanel").hidden) document.body.classList.remove("sheet"); }
+
+  // ---- read-only booking view ----
+  let viewId = null;
+  function openView(b, quiet){
+    viewId = b.id; closeForm();
+    const c = clientById(b.clientId) || {};
+    const inv = invoices.find(i=>i.booking_id===b.id && i.status==="current");
+    const total = inv ? Number(inv.total) : b.total, bal = Math.max(0, total - b.deposit);
+    const dates = b.start===b.end ? nice(b.start) : `${nice(b.start,{day:"numeric",month:"short"})} – ${nice(b.end,{day:"numeric",month:"short",year:"numeric"})}`;
+    const row = (k,v) => v ? `<dt>${k}</dt><dd>${v}</dd>` : "";
+    $("vTitle").textContent = b.client;
+    $("vBody").innerHTML = `
+      <div><span class="pill ${b.status}">${STAT[b.status]}</span>${b.quoteNo?` <span class="meta">Quote ${esc(b.quoteNo)}</span>`:""}${inv?` <span class="meta">· Invoice ${esc(inv.invoice_no)}${inv.revision>1?` rev ${inv.revision}`:""}</span>`:""}</div>
+      <div class="vsec"><h4>Event</h4><dl class="vlist">
+        ${row("Date", esc(dates))}${row("Session", esc(SESS[b.session]||""))}${row("Area", esc(b.area))}${row("Event type", esc(b.type))}${row("Guests", b.guests!=null && b.guests!=="" ? esc(b.guests) : "")}
+      </dl></div>
+      <div class="vsec"><h4>Client</h4><dl class="vlist">
+        ${row("Name", esc(c.name))}${c.company && c.company!==c.name ? row("Company", esc(c.company)) : ""}${row("Phone", esc(c.phone))}${row("Email", esc(c.email))}
+        ${row("ID / passport", esc(c.id_number))}${row("Address", esc(c.address))}${row("Heard via", esc(c.source))}
+      </dl></div>
+      ${c.contact_name||c.contact_phone||c.contact_email ? `<div class="vsec"><h4>Contact person</h4><dl class="vlist">${row("Name", esc(c.contact_name))}${row("Number", esc(c.contact_phone))}${row("Email", esc(c.contact_email))}</dl></div>` : ""}
+      <div class="vsec"><h4>Money</h4><div class="vmoney">
+        <div><span class="meta">Total</span><b>${pula(total)}</b></div><div><span class="meta">Paid</span><b>${pula(b.deposit)}</b></div><div><span class="meta">Balance</span><b>${pula(bal)}</b></div>
+      </div>${total && b.status!=="cancelled" && b.deposit < total/2 ? `<p class="hint warn" style="margin:4px 0 0">50% deposit is ${pula(total/2)}; ${pula(total/2-b.deposit)} still to collect.</p>` : ""}</div>
+      ${b.notes ? `<div class="vsec"><h4>Notes</h4><p class="vnotes">${esc(b.notes)}</p></div>` : ""}`;
+    $("vQuote").textContent = b.quoteId ? `Open quote ${b.quoteNo}` : "Create quote";
+    $("vInvoice").hidden = !inv; if(inv) $("vInvoice").textContent = `View invoice ${inv.invoice_no}`;
+    $("viewPanel").hidden = false;
+    if(quiet) return;
+    if(mobile()){ document.body.classList.add("sheet"); $("viewPanel").scrollTop = 0; }
+    else $("viewPanel").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth", block:"nearest"});
+  }
+  function closeView(){ $("viewPanel").hidden = true; viewId = null; if($("formPanel").hidden) document.body.classList.remove("sheet"); }
+  $("vClose").onclick = $("vClose2").onclick = closeView;
+  $("vEdit").onclick = ()=>{ const b = bookings.find(x=>x.id===viewId); if(b) openForm(b); };
+  $("vQuote").onclick = ()=>{ const b = bookings.find(x=>x.id===viewId); if(!b) return;
+    if(b.quoteId){ closeView(); go("quotes"); showDoc(b.quoteId); return; }
+    const c = clientById(b.clientId);
+    closeView(); go("quotes");
+    openQuote(null, {bookingId:b.id, client:c, type:b.type, area:b.area, session:b.session, start:b.start, end:b.end,
+      guests:b.guests ? String(b.guests) : "", status:{inquired:"draft", quoted:"sent", confirmed:"confirmed", cancelled:"draft"}[b.status]}); };
+  $("vInvoice").onclick = ()=>{ const inv = invoices.find(i=>i.booking_id===viewId && i.status==="current"); if(!inv) return; closeView(); go("invoices"); showInvoice(inv.id); };
 
   $("f-client").addEventListener("input", ()=>{
     const name = $("f-client").value.trim().toLowerCase();
@@ -1151,7 +1221,7 @@ input:disabled{opacity:.7}
     const bk = e.target.closest(".bk,.up");
     if(bk){ const b = bookings.find(x=>x.id===bk.dataset.id); if(!b) return;
       if(bk.dataset.d){ selected=bk.dataset.d; const d=parse(selected); view=new Date(d.getFullYear(),d.getMonth(),1); render(); }
-      openForm(b); }
+      openView(b); }
   });
   $("prev").onclick = ()=>{ view = new Date(view.getFullYear(), view.getMonth()-1, 1); renderCal(); };
   $("next").onclick = ()=>{ view = new Date(view.getFullYear(), view.getMonth()+1, 1); renderCal(); };
@@ -1210,7 +1280,7 @@ input:disabled{opacity:.7}
     const view = ["home","bookings","quotes","invoices"].includes(v) ? v : "home";
     $("homeView").hidden = view!=="home"; $("bookingsView").hidden = view!=="bookings"; $("quotesView").hidden = view!=="quotes"; $("invoicesView").hidden = view!=="invoices";
     document.querySelectorAll("[data-nav]").forEach(a=>a.setAttribute("aria-current", a.dataset.nav===view ? "page" : "false"));
-    if(view!=="bookings") closeForm();
+    if(view!=="bookings"){ closeForm(); closeView(); }
     if(view==="quotes" && $("qEditView").hidden && $("qDocView").hidden) showQList();
     if(view==="invoices" && $("iEditView").hidden && $("iDocView").hidden) showIList();
     document.title = (view==="home" ? "" : ({bookings:"Bookings",quotes:"Quotes",invoices:"Invoices"})[view]+" · ") + "Base Bush Lounge";
