@@ -221,7 +221,8 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
 .irow .rm{padding:6px 0;min-height:0}
 @media (max-width:640px){
   .irow.head{display:none}
-  .irow{grid-template-columns:70px minmax(0,1fr) 40px;grid-template-areas:"desc desc rm" "qty price amt";padding:10px 0;border-top:1px solid var(--line)}
+  .irow{grid-template-columns:64px minmax(0,1fr) auto;grid-template-areas:"desc desc rm" "qty price amt";padding:10px 0;border-top:1px solid var(--line)}
+  .irow .amt{min-width:84px}
   .irow .d{grid-area:desc}.irow .q{grid-area:qty}.irow .pr{grid-area:price}.irow .amt{grid-area:amt;align-self:center}.irow .rm{grid-area:rm}
 }
 .itemtools{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
@@ -395,6 +396,13 @@ input:disabled{opacity:.7}
 .qdoc .csign th{background:#111;color:#fff;padding:6px 9px;text-align:left;font-size:10.5px}
 .qdoc .csign td{border:1px solid #bbb;padding:12px 9px;height:22px}
 .qdoc .csign td:first-child{width:110px;font-weight:700;background:#f4f4f4}
+/* Phones: the save bar must never cover line items while the keyboard is open */
+@media (max-width:700px){
+  .stickybar{position:static;padding:10px 12px}
+  .stickybar button{flex:1 1 auto}
+  .stickybar .spacer,.stickybar > span[style*="flex:1"]{display:none}
+  .stickybar .meta{width:100%;order:-1}
+}
 </style>
 </head>
 <body>
