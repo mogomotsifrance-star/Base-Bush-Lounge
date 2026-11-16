@@ -18,18 +18,18 @@ body{margin:0;font-size:14px}
 :root{
   --bg:#f1f1ea; --surface:#fbfbf7; --ink:#1e2920; --muted:#5d685e; --line:#d7dacd;
   --leaf:#2f5d46; --leaf-tint:#dfe9e1; --amber:#9a6417; --amber-tint:#f5e8d2;
-  --grey-tint:#e7e8e2; --danger:#a8362c; --danger-tint:#f6e0dd; --today:#2f5d46;
+  --grey-tint:#e7e8e2; --danger:#a8362c; --danger-tint:#f6e0dd; --today:#2f5d46; --logo-filter:none;
   --display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
   --body:"Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#131915; --surface:#1b231e; --ink:#e6ebe2; --muted:#98a59a; --line:#2c3730;
   --leaf:#7fb894; --leaf-tint:#22382b; --amber:#dca64c; --amber-tint:#3a2e19;
-  --grey-tint:#262d28; --danger:#e5857a; --danger-tint:#3d2220; --today:#7fb894; color-scheme:dark}}
+  --grey-tint:#262d28; --danger:#e5857a; --danger-tint:#3d2220; --today:#7fb894; --logo-filter:invert(1); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#131915; --surface:#1b231e; --ink:#e6ebe2; --muted:#98a59a; --line:#2c3730;
   --leaf:#7fb894; --leaf-tint:#22382b; --amber:#dca64c; --amber-tint:#3a2e19;
-  --grey-tint:#262d28; --danger:#e5857a; --danger-tint:#3d2220; --today:#7fb894; color-scheme:dark}
+  --grey-tint:#262d28; --danger:#e5857a; --danger-tint:#3d2220; --today:#7fb894; --logo-filter:invert(1); color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.45}
 .wrap{max-width:1180px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:20px}
@@ -159,6 +159,106 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
 .staffrow span{overflow-wrap:anywhere}
 .addstaff{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;margin-top:10px}
 @media (max-width:420px){.addstaff{grid-template-columns:1fr 1fr}.addstaff input{grid-column:1/-1}}
+/* ---- shell: nav + views ---- */
+.nav{display:flex;align-items:center;gap:12px 18px;flex-wrap:wrap;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
+.brand img{width:44px;height:auto;filter:var(--logo-filter)}
+.brand b{font-family:var(--display);font-size:1.1rem;font-weight:700;letter-spacing:-.01em}
+.navlinks{display:flex;gap:2px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:3px}
+.navlinks a{padding:7px 14px;border-radius:7px;color:var(--muted);text-decoration:none;font-weight:500}
+.navlinks a:hover{color:var(--ink)}
+.navlinks a[aria-current="page"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.navlinks a:focus-visible,.tile:focus-visible,.brand:focus-visible{outline:2px solid var(--leaf);outline-offset:2px}
+.view{display:grid;gap:20px}
+@media (max-width:560px){.nav .topbar{width:100%;justify-content:space-between}.navlinks{order:3;width:100%}.navlinks a{flex:1;text-align:center}}
+/* ---- home ---- */
+.hero{display:grid;gap:4px;padding-top:6px}
+.hero h1{font-size:clamp(1.8rem,4vw,2.5rem)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px}
+.tile{display:grid;gap:10px;align-content:start;padding:24px;border-radius:14px;border:1px solid var(--line);background:var(--surface);text-decoration:none;color:var(--ink);transition:border-color .15s,transform .15s}
+.tile:hover{border-color:var(--leaf);transform:translateY(-2px)}
+.tile h2{font-family:var(--display);font-weight:700;font-size:1.9rem;margin:0;letter-spacing:-.01em}
+.tile .sub{max-width:44ch}
+.tilefoot{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:8px;padding-top:14px;border-top:1px solid var(--line)}
+.tile .big{font-family:var(--display);font-size:2rem;font-weight:700;font-variant-numeric:tabular-nums;margin-right:4px}
+.tile .go{color:var(--leaf);font-weight:600}
+.quick{display:flex;gap:8px;flex-wrap:wrap}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px}
+.kpi{padding:14px 16px;border-radius:10px;background:var(--surface);border:1px solid var(--line);display:grid;gap:2px}
+.kpi b{font-size:1.35rem;font-variant-numeric:tabular-nums;font-family:var(--display)}
+.homegrid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.homegrid{grid-template-columns:minmax(0,1fr)}}
+/* ---- quotes ---- */
+.pill.draft{background:var(--grey-tint);color:var(--ink)}
+.pill.sent{background:var(--amber-tint);color:var(--amber)}
+.pill.declined{background:var(--danger-tint);color:var(--danger)}
+.qgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+@media (max-width:860px){.qgrid{grid-template-columns:minmax(0,1fr)}}
+.qgrid .panel form,.qgrid .panel .fs{display:grid;gap:12px;margin-top:10px}
+.row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:520px){.row3{grid-template-columns:1fr 1fr}}
+.items{display:grid;gap:6px;margin-top:10px}
+.irow{display:grid;grid-template-columns:72px minmax(0,1fr) 120px 110px 40px;gap:8px;align-items:center}
+.irow.head{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+.irow .amt{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.irow .rm{padding:6px 0;min-height:0}
+@media (max-width:640px){
+  .irow.head{display:none}
+  .irow{grid-template-columns:70px minmax(0,1fr) 40px;grid-template-areas:"desc desc rm" "qty price amt";padding:10px 0;border-top:1px solid var(--line)}
+  .irow .d{grid-area:desc}.irow .q{grid-area:qty}.irow .pr{grid-area:price}.irow .amt{grid-area:amt;align-self:center}.irow .rm{grid-area:rm}
+}
+.itemtools{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.itemtools select{width:auto;flex:1 1 240px}
+.qtotals{display:grid;grid-template-columns:auto auto;gap:4px 20px;justify-content:end;font-variant-numeric:tabular-nums;margin-top:12px}
+.qtotals .t{font-weight:700;font-size:1.1rem;padding-top:6px;border-top:1px solid var(--line)}
+.qtotals span:nth-child(even){text-align:right}
+.stickybar{position:sticky;bottom:0;z-index:5;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 16px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));background:var(--surface);border:1px solid var(--line);border-radius:12px}
+.linknote{font-size:12.5px;color:var(--muted)}
+.linknote button{padding:2px 8px;min-height:0;font-size:12.5px}
+.prow{display:grid;grid-template-columns:minmax(0,1fr) 120px auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.pcat{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--leaf);font-weight:600;margin:14px 0 2px}
+.pricelist{max-height:520px;overflow-y:auto}
+/* ---- printable quote (paper look in every theme) ---- */
+.docbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.docwrap{overflow-x:auto;padding:4px 0 10px}
+.qdoc{-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#fff;color:#141414;width:794px;min-height:1000px;margin:0 auto;padding:44px 48px 30px;font-family:Arial,"Helvetica Neue",Helvetica,sans-serif;font-size:12px;line-height:1.45;box-shadow:0 2px 14px rgba(0,0,0,.12);display:flex;flex-direction:column}
+.qdoc .qtop{display:flex;justify-content:space-between;align-items:flex-start}
+.qdoc .qtop img{width:118px;height:auto}
+.qdoc .qno{text-align:right}
+.qdoc .qno h2{font-size:18px;margin:6px 0 4px;font-weight:700;letter-spacing:.01em}
+.qdoc .qno div{font-size:11px}
+.qdoc .parties{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:20px 0 22px}
+.qdoc .parties b{font-weight:700}
+.qdoc table{width:100%;border-collapse:collapse}
+.qdoc th{background:#111;color:#fff;font-size:10.5px;font-weight:700;text-transform:uppercase;text-align:left;padding:7px 9px}
+.qdoc td{padding:8px 9px;vertical-align:top}
+.qdoc .evt{border:1px solid #cfcfcf;margin-bottom:18px}
+.qdoc .lines tbody tr:nth-child(even) td{background:#f1f1f1}
+.qdoc .lines td{border-bottom:0}
+.qdoc .lines tbody tr:last-child td{border-bottom:1px solid #cfcfcf}
+.qdoc .r{text-align:right;white-space:nowrap}
+.qdoc .c{text-align:center}
+.qdoc .bottom{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:16px;align-items:start}
+.qdoc .bank{border:1px solid #cfcfcf}
+.qdoc .bank .h{padding:7px 9px;border-bottom:1px solid #cfcfcf}
+.qdoc .bank dl{display:grid;grid-template-columns:110px 1fr;gap:2px 10px;margin:0;padding:8px 9px}
+.qdoc .bank dd{margin:0;font-weight:700}
+.qdoc .sums{display:grid;gap:2px}
+.qdoc .sums div{display:flex;justify-content:space-between}
+.qdoc .sums .tot{border:1.5px solid #111;padding:8px 9px;margin-top:8px;font-weight:700}
+.qdoc .terms{margin-top:26px}
+.qdoc .terms h4{margin:0 0 8px;font-size:12px}
+.qdoc .terms ol{margin:0;padding-left:16px;display:grid;gap:4px}
+.qdoc .foot{margin-top:auto;padding-top:30px;text-align:center;color:#777;font-size:10.5px}
+@media print{
+  @page{size:A4;margin:12mm}
+  html,body{background:#fff!important}
+  :root{padding:0}
+  body *{visibility:hidden}
+  #qdoc,#qdoc *{visibility:visible}
+  #qdoc{position:absolute;left:0;top:0;width:100%;min-height:0;box-shadow:none;padding:0}
+  .docwrap{overflow:visible}
+}
 </style>
 </head>
 <body>
@@ -186,10 +286,67 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
 </div>
 
 <div class="wrap" id="appView" hidden>
+  <nav class="nav" aria-label="Main">
+    <a class="brand" href="#home"><img src="logo.png" alt=""><b>Base Bush Lounge</b></a>
+    <div class="navlinks">
+      <a href="#home" data-nav="home">Home</a>
+      <a href="#bookings" data-nav="bookings">Bookings</a>
+      <a href="#quotes" data-nav="quotes">Quotes</a>
+    </div>
+    <div class="topbar"><span id="who"></span><button id="signOut">Sign out</button></div>
+  </nav>
+
+  <div id="notice" class="notice" hidden></div>
+
+  <!-- ===== Home ===== -->
+  <section class="view" id="homeView">
+    <div class="hero">
+      <p class="eyebrow">Mokolodi · staff workspace</p>
+      <h1 id="greet">Welcome</h1>
+      <p class="sub">House, Conference and Restaurant. Pick where you want to work.</p>
+    </div>
+    <div class="tiles">
+      <a class="tile" href="#bookings">
+        <p class="eyebrow">Calendar</p>
+        <h2>Bookings</h2>
+        <p class="sub">Check availability, hold dates, capture client details and track the 50% deposit.</p>
+        <div class="tilefoot"><span><span class="big" id="t-upcoming">0</span>upcoming</span><span class="go">Open bookings →</span></div>
+      </a>
+      <a class="tile" href="#quotes">
+        <p class="eyebrow">Sales</p>
+        <h2>Quotes</h2>
+        <p class="sub">Build a quote from the price list, send it, and confirm it straight onto the calendar.</p>
+        <div class="tilefoot"><span><span class="big" id="t-open">0</span>awaiting reply</span><span class="go">Open quotes →</span></div>
+      </a>
+    </div>
+    <div class="quick"><button class="primary" id="homeNewQuote">New quote</button><button id="homeNewBooking">New booking</button></div>
+    <div class="kpis">
+      <div class="kpi"><span class="meta">Quotes awaiting reply</span><b id="k-sent">P 0</b><span class="meta" id="k-sent-n"></span></div>
+      <div class="kpi"><span class="meta">Deposits still to collect</span><b id="k-dep">P 0</b><span class="meta" id="k-dep-n"></span></div>
+      <div class="kpi"><span class="meta">Confirmed this month</span><b id="k-month">P 0</b><span class="meta" id="k-month-n"></span></div>
+    </div>
+    <div class="homegrid">
+      <section class="panel"><p class="eyebrow">Next 7 days</p><h3>Coming up</h3><div class="upcoming" id="weekList"></div></section>
+      <section class="panel" id="staffPanel" hidden>
+        <p class="eyebrow">Manager only</p>
+        <h3>Staff access</h3>
+        <p class="hint">People on this list can sign in and manage bookings. Managers can also add or remove staff.</p>
+        <div id="staffList"></div>
+        <form class="addstaff" id="staffForm" novalidate>
+          <input type="email" id="s-email" placeholder="staff@email.com" aria-label="Staff email" inputmode="email">
+          <select id="s-role" aria-label="Role"><option value="staff">Staff</option><option value="admin">Manager</option></select>
+          <button type="submit" class="primary">Add</button>
+        </form>
+      </section>
+    </div>
+  </section>
+
+  <!-- ===== Bookings ===== -->
+  <div class="view" id="bookingsView" hidden>
   <header>
     <div>
-      <h1>Base Bush Lounge Bookings</h1>
-      <p class="sub">Mokolodi · House, Conference and Restaurant in one calendar</p>
+      <h1>Bookings</h1>
+      <p class="sub">House, Conference and Restaurant in one calendar</p>
     </div>
     <div style="display:grid;gap:8px;justify-items:start">
       <div class="legend">
@@ -198,11 +355,8 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
         <span><i class="sw inq"></i>Inquired</span>
         <span><i class="sw canc"></i>Cancelled</span>
       </div>
-      <div class="topbar"><span id="who"></span><button id="signOut">Sign out</button></div>
     </div>
   </header>
-
-  <div id="notice" class="notice" hidden></div>
 
   <div class="main">
     <section class="panel">
@@ -287,6 +441,7 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
               <label>Deposit received (P)<input type="number" id="f-deposit" min="0" step="50" class="money" inputmode="decimal"></label>
             </div>
             <p class="hint" id="depHint">A 50% deposit secures the date.</p>
+            <p class="linknote" id="quoteLink" hidden></p>
             <label>Notes<textarea id="f-notes" placeholder="Menu, décor, contact person, payment reference…"></textarea></label>
           </fieldset>
           <div id="clash" class="clash" hidden></div>
@@ -318,17 +473,7 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
         <div class="clients" id="clients"></div>
       </section>
 
-      <section class="panel" id="staffPanel" hidden>
-        <p class="eyebrow">Manager only</p>
-        <h3>Staff access</h3>
-        <p class="hint">People on this list can sign in and manage bookings. Managers can also add or remove staff.</p>
-        <div id="staffList"></div>
-        <form class="addstaff" id="staffForm" novalidate>
-          <input type="email" id="s-email" placeholder="staff@email.com" aria-label="Staff email" inputmode="email">
-          <select id="s-role" aria-label="Role"><option value="staff">Staff</option><option value="admin">Manager</option></select>
-          <button type="submit" class="primary">Add</button>
-        </form>
-      </section>
+
     </div>
   </div>
 
@@ -357,6 +502,139 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
     </div>
     <div class="bcards" id="listCards"></div>
   </section>
+  </div><!-- /bookingsView -->
+
+  <!-- ===== Quotes ===== -->
+  <div class="view" id="quotesView" hidden>
+    <div class="view" id="qListView">
+      <header>
+        <div><h1>Quotes</h1><p class="sub">A sent quote holds the date on the calendar. Confirming it confirms the booking.</p></div>
+        <button class="primary" id="newQuoteBtn">New quote</button>
+      </header>
+      <section class="panel list-panel">
+        <div class="list-head">
+          <div><p class="eyebrow">All quotes</p><h3>Quotes</h3></div>
+          <div class="tabs" role="tablist" id="qtabs">
+            <button type="button" role="tab" data-qtab="all" aria-selected="true">All<span class="c" id="qc-all"></span></button>
+            <button type="button" role="tab" data-qtab="draft" aria-selected="false">Draft<span class="c" id="qc-draft"></span></button>
+            <button type="button" role="tab" data-qtab="sent" aria-selected="false">Sent<span class="c" id="qc-sent"></span></button>
+            <button type="button" role="tab" data-qtab="confirmed" aria-selected="false">Confirmed<span class="c" id="qc-confirmed"></span></button>
+            <button type="button" role="tab" data-qtab="declined" aria-selected="false">Declined<span class="c" id="qc-declined"></span></button>
+          </div>
+        </div>
+        <div class="listtools"><input type="search" id="qSearch" placeholder="Search quote number, client, event or area" aria-label="Search quotes"></div>
+        <div class="tablewrap">
+          <table class="btable">
+            <thead><tr><th>Quote</th><th>Client</th><th>Event date</th><th>Event</th><th>Area</th><th class="num">Total</th><th>Status</th><th></th></tr></thead>
+            <tbody id="qBody"></tbody>
+          </table>
+        </div>
+        <div class="bcards" id="qCards"></div>
+      </section>
+      <section class="panel" id="pricePanel">
+        <p class="eyebrow">Price list</p>
+        <h3>Services and prices</h3>
+        <p class="hint" id="priceHint">Prices fill in automatically when you add an item to a quote. You can still change the price on any quote.</p>
+        <div class="pricelist" id="priceList"></div>
+        <form class="addstaff" id="priceForm" novalidate hidden>
+          <input id="p-desc" placeholder="New item description" aria-label="Item description">
+          <select id="p-cat" aria-label="Category"><option>Venue hire</option><option>Accommodation</option><option>Catering</option><option>Activities</option><option>Drinks</option><option>Other</option></select>
+          <input id="p-price" type="number" min="0" step="1" inputmode="decimal" placeholder="Price (P)" aria-label="Price" style="max-width:130px">
+          <button type="submit" class="primary">Add item</button>
+        </form>
+      </section>
+    </div>
+
+    <!-- Quote editor -->
+    <div class="view" id="qEditView" hidden>
+      <header>
+        <div><p class="eyebrow" id="qeEyebrow">New quote</p><h1 id="qeTitle">New quote</h1></div>
+        <button type="button" id="qeBack">← All quotes</button>
+      </header>
+      <form id="qForm" novalidate class="view">
+        <div class="qgrid">
+          <section class="panel"><p class="eyebrow">Quote to</p><h3>Client</h3>
+            <div class="fs">
+              <label>Client name<input id="q-client" autocomplete="off" list="clientList" placeholder="Person or company booking" required></label>
+              <p class="hint" id="qClientHint" hidden></p>
+              <div class="row">
+                <label>Company<input id="q-company" autocomplete="off" placeholder="e.g. Prolearn Proprietary Limited"></label>
+                <label>VAT number<input id="q-vat" autocomplete="off" placeholder="Optional"></label>
+              </div>
+              <label>Physical address<input id="q-address" autocomplete="off" placeholder="Plot, building, area"></label>
+              <label>Postal address<input id="q-postal" autocomplete="off" placeholder="P O Box"></label>
+              <div class="row">
+                <label>Tel<input id="q-phone" type="tel" inputmode="tel" placeholder="+267"></label>
+                <label>Email<input id="q-email" type="email" inputmode="email" autocomplete="off"></label>
+              </div>
+            </div>
+          </section>
+          <section class="panel"><p class="eyebrow">Event</p><h3>Details</h3>
+            <div class="fs">
+              <div class="row">
+                <label>End client<input id="q-endclient" autocomplete="off" placeholder="If booking for someone else"></label>
+                <label>Client ref<input id="q-ref" autocomplete="off" placeholder="Their PO / reference"></label>
+              </div>
+              <div class="row">
+                <label>Event type
+                  <select id="q-type"><option>Wedding</option><option>Corporate event</option><option>Conference / meeting</option><option>Christmas party</option><option>Private party</option><option>Restaurant reservation</option><option>House stay</option><option>Other</option></select>
+                </label>
+                <label>Area<select id="q-area"></select></label>
+              </div>
+              <div class="row3">
+                <label>Session<select id="q-session"><option value="full">Full day</option><option value="day">Daytime</option><option value="evening">Evening</option></select></label>
+                <label>Start date<input type="date" id="q-start" required></label>
+                <label>End date<input type="date" id="q-end" required></label>
+              </div>
+              <div class="row3">
+                <label>No. of guests<input id="q-guests" placeholder="e.g. 20 – 23" autocomplete="off"></label>
+                <label>Quote date<input type="date" id="q-date"></label>
+                <label>Valid (days)<input type="number" id="q-valid" min="1" max="365" inputmode="numeric"></label>
+              </div>
+              <label>Status
+                <select id="q-status"><option value="draft">Draft (calendar: inquired)</option><option value="sent">Sent (holds the date)</option><option value="confirmed">Confirmed (booking confirmed)</option><option value="declined">Declined (frees the date)</option></select>
+              </label>
+              <div id="qClash" class="clash" hidden></div>
+            </div>
+          </section>
+        </div>
+        <section class="panel"><p class="eyebrow">Line items</p><h3>What's included</h3>
+          <div class="items" id="qItems"></div>
+          <div class="itemtools">
+            <select id="q-addprice" aria-label="Add from price list"></select>
+            <button type="button" id="q-addblank">Add blank line</button>
+          </div>
+          <datalist id="priceOptions"></datalist>
+          <div class="row" style="margin-top:14px;align-items:start">
+            <label>VAT %<input type="number" id="q-vatrate" min="0" max="100" step="0.5" inputmode="decimal" style="max-width:120px"></label>
+            <div class="qtotals" id="qTotals"></div>
+          </div>
+          <label style="margin-top:12px">Internal notes (not printed)<textarea id="q-notes" placeholder="Menu choices, follow-up dates, who you spoke to…"></textarea></label>
+        </section>
+        <div class="stickybar">
+          <button type="submit" class="primary" id="qSave">Save quote</button>
+          <button type="button" id="qSaveView">Save and view quote</button>
+          <button type="button" id="qCancel">Close</button>
+          <span class="spacer" style="flex:1"></span>
+          <span class="meta" id="qBarTotal"></span>
+        </div>
+      </form>
+    </div>
+
+    <!-- Printable quote -->
+    <div class="view" id="qDocView" hidden>
+      <div class="docbar">
+        <button type="button" id="qdBack">← All quotes</button>
+        <button type="button" id="qdEdit">Edit</button>
+        <span style="flex:1"></span>
+        <button type="button" id="qdSent">Mark as sent</button>
+        <button type="button" class="primary" id="qdConfirm">Confirm booking</button>
+        <button type="button" id="qdPrint">Print / save PDF</button>
+      </div>
+      <p class="linknote" id="qdNote"></p>
+      <div class="docwrap"><div class="qdoc" id="qdoc"></div></div>
+    </div>
+  </div><!-- /quotesView -->
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -376,7 +654,7 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
   const $ = id => document.getElementById(id);
   const mobile = () => matchMedia("(max-width:860px)").matches;
 
-  let bookings = [], clients = [], staff = [], me = null, isAdmin = false;
+  let bookings = [], clients = [], staff = [], me = null, isAdmin = false, quotes = [], prices = [];
   const now = new Date();
   let view = new Date(now.getFullYear(), now.getMonth(), 1);
   let selected = iso(now);
@@ -409,19 +687,23 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
   // ---------- data ----------
   function mapBooking(r){
     const c = clientById(r.client_id) || {};
+    const q = quotes.find(x=>x.booking_id===r.id);
     return {id:r.id, clientId:r.client_id, client:c.name||"(client removed)", company:c.company, phone:c.phone, email:c.email,
       type:r.event_type, area:r.area, session:r.session, start:r.start_date, end:r.end_date, guests:r.guests,
-      status:r.status, total:Number(r.total)||0, deposit:Number(r.deposit)||0, notes:r.notes||""};
+      status:r.status, total:Number(r.total)||0, deposit:Number(r.deposit)||0, notes:r.notes||"", quoteId:q?.id||null, quoteNo:q?.quote_no||null};
   }
   let rawBookings = [];
   async function loadAll(){
-    const [cb, bb] = await Promise.all([
+    const [cb, bb, qb, pb] = await Promise.all([
       sb.from("clients").select("*").order("name"),
-      sb.from("bookings").select("*").order("start_date")
+      sb.from("bookings").select("*").order("start_date"),
+      sb.from("quotes").select("*").order("created_at", {ascending:false}),
+      sb.from("price_list").select("*").order("sort")
     ]);
-    if(cb.error || bb.error){ notice("Couldn't load bookings. Check your connection and reload."); return; }
-    clients = cb.data; rawBookings = bb.data; bookings = rawBookings.map(mapBooking);
-    notice(""); render(); if(!$("formPanel").hidden) liveCheck();
+    if(cb.error || bb.error || qb.error || pb.error){ notice("Couldn't load your data. Check your connection and reload."); return; }
+    clients = cb.data; quotes = qb.data; prices = pb.data; rawBookings = bb.data; bookings = rawBookings.map(mapBooking);
+    notice(""); render(); if(!$("formPanel").hidden) liveCheck(); if(!$("qEditView").hidden) qCheck();
+    if(!$("qDocView").hidden && docQuoteId) showDoc(docQuoteId, true);
   }
   let reloadT; const scheduleReload = ()=>{ clearTimeout(reloadT); reloadT = setTimeout(loadAll, 300); };
   async function loadStaff(){
@@ -509,7 +791,7 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
       <td style="min-width:160px"><strong>${esc(b.client)}</strong>${b.company?`<div class="sub2">${esc(b.company)}</div>`:""}<div class="sub2">${contact(b)}</div></td>
       <td>${esc(b.type)}</td><td>${esc(b.area)}</td>
       <td class="num">${b.guests??"—"}</td><td class="num">${b.total?pula(b.total):"—"}</td><td class="num">${b.deposit?pula(b.deposit):"—"}</td>
-      <td><span class="pill ${b.status}">${STAT[b.status]}</span></td>
+      <td><span class="pill ${b.status}">${STAT[b.status]}</span>${b.quoteNo?`<div class="sub2">${esc(b.quoteNo)}</div>`:""}</td>
       <td><button type="button" data-edit="${esc(b.id)}">Edit</button></td></tr>`).join("")
       : `<tr><td colspan="9">${empty}</td></tr>`;
     $("listCards").innerHTML = list.length ? list.map(b=>`<div class="bcard">
@@ -528,7 +810,7 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
   $("listSearch").addEventListener("input", renderList);
   $("listWhen").addEventListener("change", renderList);
 
-  function render(){ renderCal(); renderDay(); renderUpcoming(); renderClients(); renderList(); }
+  function render(){ renderCal(); renderDay(); renderUpcoming(); renderClients(); renderList(); renderHome(); renderQuotes(); renderPrices(); }
 
   // ---------- form ----------
   function readForm(){
@@ -561,7 +843,10 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
     $("f-start").value = b?.start||selected; $("f-end").value = b?.end||selected;
     $("f-guests").value = b?.guests??""; $("f-status").value = b?.status||"inquired";
     $("f-total").value = b?.total||""; $("f-deposit").value = b?.deposit||""; $("f-notes").value = b?.notes||"";
-    $("delBtn").hidden = !b; $("delConfirm").hidden = true;
+    $("delBtn").hidden = !b || !!b?.quoteId; $("delConfirm").hidden = true;
+    const ql = $("quoteLink"); ql.hidden = !b?.quoteId;
+    $("f-total").disabled = !!b?.quoteId;
+    if(b?.quoteId) ql.innerHTML = `Linked to quote <b>${esc(b.quoteNo)}</b>. The total comes from the quote; status and dates stay in step both ways. <button type="button" data-openquote="${esc(b.quoteId)}">Open quote</button>`;
     $("formPanel").hidden = false; liveCheck();
     if(mobile()){ document.body.classList.add("sheet"); $("formPanel").scrollTop = 0; }
     else { $("formPanel").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth", block:"nearest"}); $("f-client").focus({preventScroll:true}); }
@@ -625,6 +910,8 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
       else { const r = await sb.from("clients").insert(clientRow).select("id").single(); if(r.error) throw r.error; cid = r.data.id; }
       const row = {client_id:cid, event_type:c.type, area:c.area, session:c.session, start_date:c.start, end_date:c.end,
         guests:c.guests, status:c.status, total:c.total, deposit:c.deposit, notes:c.notes||null};
+      const linked = editingId && bookings.find(b=>b.id===editingId)?.quoteId;
+      if(linked) delete row.total;
       const r = editingId ? await sb.from("bookings").update(row).eq("id", editingId) : await sb.from("bookings").insert(row);
       if(r.error){
         if(!clientId && !editingId) await sb.from("clients").delete().eq("id", cid); // don't leave an orphan client (managers only; harmless otherwise)
@@ -680,6 +967,305 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
     $("s-email").value=""; toast("Added. They can now sign in with that email."); loadStaff();
   });
 
+
+  // ================= HOME =================
+  function renderHome(){
+    const h = new Date().getHours();
+    $("greet").textContent = (h<12?"Good morning":h<17?"Good afternoon":"Good evening");
+    const today = iso(new Date()), wk = new Date(); wk.setDate(wk.getDate()+7); const wkEnd = iso(wk);
+    const live = bookings.filter(b=>b.status!=="cancelled");
+    $("t-upcoming").textContent = live.filter(b=>b.end>=today).length;
+    const sent = quotes.filter(q=>q.status==="sent");
+    $("t-open").textContent = sent.length;
+    $("k-sent").textContent = pula(sent.reduce((a,q)=>a+Number(q.total),0));
+    $("k-sent-n").textContent = `${sent.length} quote${sent.length===1?"":"s"} sent, not yet confirmed`;
+    const owing = bookings.filter(b=>b.status==="confirmed" && b.end>=today && b.total && b.deposit < b.total/2);
+    $("k-dep").textContent = pula(owing.reduce((a,b)=>a+(b.total/2-b.deposit),0));
+    $("k-dep-n").textContent = owing.length ? `${owing.length} confirmed booking${owing.length===1?"":"s"} short of 50%` : "All confirmed bookings have their deposit";
+    const m0 = today.slice(0,8)+"01", m1 = iso(new Date(new Date().getFullYear(), new Date().getMonth()+1, 0));
+    const mc = bookings.filter(b=>b.status==="confirmed" && b.start<=m1 && b.end>=m0);
+    $("k-month").textContent = pula(mc.reduce((a,b)=>a+b.total,0));
+    $("k-month-n").textContent = `${mc.length} confirmed booking${mc.length===1?"":"s"} this month`;
+    const week = live.filter(b=>b.end>=today && b.start<=wkEnd).sort((a,b)=>a.start.localeCompare(b.start));
+    $("weekList").innerHTML = week.length ? week.map(b=>`<button type="button" class="up" data-id="${esc(b.id)}" data-d="${b.start}" data-gobook="1">
+      <span class="d">${short(b.start)}<small>${nice(b.start,{weekday:"short"})}</small></span>
+      <span style="min-width:0"><strong style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(b.client)}</strong><span class="meta">${esc(b.type)} · ${esc(b.area)}</span></span>
+      <span class="pill ${b.status}">${STAT[b.status]}</span></button>`).join("") : `<div class="empty">Nothing booked for the next 7 days.</div>`;
+  }
+
+  // ================= ROUTING =================
+  function route(){
+    const v = (location.hash||"#home").slice(1);
+    const view = ["home","bookings","quotes"].includes(v) ? v : "home";
+    $("homeView").hidden = view!=="home"; $("bookingsView").hidden = view!=="bookings"; $("quotesView").hidden = view!=="quotes";
+    document.querySelectorAll("[data-nav]").forEach(a=>a.setAttribute("aria-current", a.dataset.nav===view ? "page" : "false"));
+    if(view!=="bookings") closeForm();
+    if(view==="quotes" && $("qEditView").hidden && $("qDocView").hidden) showQList();
+    document.title = (view==="home" ? "" : (view==="bookings"?"Bookings":"Quotes")+" · ") + "Base Bush Lounge";
+  }
+  window.addEventListener("hashchange", ()=>{ route(); window.scrollTo(0,0); });
+  const go = v => { if(location.hash!=="#"+v) location.hash = v; else route(); };
+
+  // ================= QUOTES =================
+  const QSTAT = {draft:"Draft", sent:"Sent", confirmed:"Confirmed", declined:"Declined"};
+  const Q2B = {draft:"inquired", sent:"quoted", confirmed:"confirmed", declined:"cancelled"};
+  let qTab = "all", qEditingId = null, qClientId = null, qItems = [], docQuoteId = null;
+  $("q-area").innerHTML = AREAS.map(a=>`<option>${esc(a)}</option>`).join("");
+
+  // Quote money format matches the printed sample: 7 500,00
+  function qm(n){ const [i,d] = Math.abs(Number(n||0)).toFixed(2).split("."); return (n<0?"-":"") + i.replace(/\B(?=(\d{3})+(?!\d))/g," ") + "," + d; }
+  const qtyFmt = n => Number(n||0) % 1 ? String(Number(n)) : String(Math.round(Number(n||0)));
+  const qClient = q => clientById(q.client_id) || {};
+  const qDays = q => Math.round((parse(q.end_date) - parse(q.start_date))/86400000) + 1;
+  const qDates = q => q.start_date===q.end_date ? nice(q.start_date,{day:"numeric",month:"short",year:"numeric"})
+    : `${short(q.start_date)} – ${nice(q.end_date,{day:"numeric",month:"short",year:"numeric"})}`;
+
+  function showQList(){ $("qListView").hidden=false; $("qEditView").hidden=true; $("qDocView").hidden=true; qEditingId=null; docQuoteId=null; }
+
+  function renderQuotes(){
+    const q = $("qSearch").value.trim().toLowerCase();
+    const base = quotes.filter(x=>{ if(!q) return true; const c = qClient(x);
+      return [x.quote_no,c.name,c.company,x.end_client,x.event_type,x.area,x.client_ref].some(v=>(v||"").toLowerCase().includes(q)); });
+    ["all","draft","sent","confirmed","declined"].forEach(t=>{ $("qc-"+t).textContent = t==="all" ? base.length : base.filter(x=>x.status===t).length; });
+    const list = qTab==="all" ? base : base.filter(x=>x.status===qTab);
+    const empty = `<div class="empty">${q ? "No quotes match that search." : qTab==="all" ? "No quotes yet. Use “New quote” to create the first one." : `No ${QSTAT[qTab].toLowerCase()} quotes.`}</div>`;
+    const who = x => { const c=qClient(x); return `<strong>${esc(c.company||c.name||"—")}</strong>${c.company&&c.name?`<div class="sub2">${esc(c.name)}</div>`:""}${x.end_client?`<div class="sub2">For ${esc(x.end_client)}</div>`:""}`; };
+    $("qBody").innerHTML = list.length ? list.map(x=>`<tr>
+      <td style="white-space:nowrap"><strong>${esc(x.quote_no)}</strong><div class="sub2">${nice(x.quote_date,{day:"numeric",month:"short",year:"numeric"})}</div></td>
+      <td style="min-width:150px">${who(x)}</td>
+      <td style="white-space:nowrap">${esc(qDates(x))}</td><td>${esc(x.event_type)}</td><td>${esc(x.area)}</td>
+      <td class="num">${pula(x.total)}</td>
+      <td><span class="pill ${x.status}">${QSTAT[x.status]}</span></td>
+      <td style="white-space:nowrap"><button type="button" data-viewq="${esc(x.id)}">View</button> <button type="button" data-editq="${esc(x.id)}">Edit</button></td></tr>`).join("")
+      : `<tr><td colspan="8">${empty}</td></tr>`;
+    $("qCards").innerHTML = list.length ? list.map(x=>{ const c=qClient(x); return `<div class="bcard">
+      <div class="top"><strong>${esc(x.quote_no)} · ${esc(c.company||c.name||"—")}</strong><span class="pill ${x.status}">${QSTAT[x.status]}</span></div>
+      <div class="meta">${esc(qDates(x))} · ${esc(x.area)} · ${esc(x.event_type)}</div>
+      <div class="meta">Total ${pula(x.total)}${x.guests_text?` · ${esc(x.guests_text)} guests`:""}</div>
+      <div class="actions"><button type="button" data-viewq="${esc(x.id)}">View</button><button type="button" data-editq="${esc(x.id)}">Edit</button></div></div>`; }).join("") : empty;
+  }
+  $("qtabs").addEventListener("click", e=>{ const t=e.target.closest("[data-qtab]"); if(!t) return; qTab=t.dataset.qtab;
+    $("qtabs").querySelectorAll("[data-qtab]").forEach(x=>x.setAttribute("aria-selected", x===t?"true":"false")); renderQuotes(); });
+  $("qSearch").addEventListener("input", renderQuotes);
+
+  // ---- price list ----
+  function renderPrices(){
+    const act = prices.filter(p=>p.active);
+    const cats = [...new Set(act.map(p=>p.category))];
+    $("q-addprice").innerHTML = `<option value="">+ Add item from price list…</option>` + cats.map(c=>`<optgroup label="${esc(c)}">${
+      act.filter(p=>p.category===c).map(p=>`<option value="${esc(p.id)}">${esc(p.description)} — P ${qm(p.unit_price)}</option>`).join("")}</optgroup>`).join("");
+    $("priceOptions").innerHTML = act.map(p=>`<option value="${esc(p.description)}"></option>`).join("");
+    $("priceForm").hidden = !isAdmin;
+    $("priceHint").textContent = isAdmin ? "Prices fill in automatically when you add an item to a quote. Change a price here and press Save; existing quotes keep the price they were sent with."
+      : "Prices fill in automatically when you add an item to a quote. You can still change the price on any quote. Ask a manager to update this list.";
+    const allCats = [...new Set(prices.map(p=>p.category))];
+    $("priceList").innerHTML = allCats.map(c=>`<div class="pcat">${esc(c)}</div>` + prices.filter(p=>p.category===c).map(p=> isAdmin
+      ? `<div class="prow" data-prow="${esc(p.id)}"><input value="${esc(p.description)}" data-pf="description" aria-label="Description"><input type="number" min="0" step="1" value="${Number(p.unit_price)}" data-pf="unit_price" class="money" aria-label="Price"><span style="display:flex;gap:4px"><button type="button" data-psave="${esc(p.id)}">Save</button><button type="button" class="ghost" data-pdel="${esc(p.id)}">Remove</button></span></div>`
+      : `<div class="prow"><span>${esc(p.description)}</span><span class="money" style="text-align:right">P ${qm(p.unit_price)}</span><span></span></div>`).join("")).join("")
+      || `<div class="empty">No items in the price list yet.</div>`;
+  }
+  $("priceForm").addEventListener("submit", async e=>{
+    e.preventDefault();
+    const description = $("p-desc").value.trim(), unit_price = Number($("p-price").value||0);
+    if(!description){ $("p-desc").focus(); return; }
+    const r = await sb.from("price_list").insert({description, unit_price, category:$("p-cat").value, sort:500});
+    if(r.error){ toast("Couldn't add: "+r.error.message); return; }
+    $("p-desc").value=""; $("p-price").value=""; toast("Added to price list"); loadAll();
+  });
+
+  // ---- editor ----
+  function qFillClient(c){
+    qClientId = c?.id || null;
+    $("q-client").value = c?.name||""; $("q-company").value = c?.company||""; $("q-vat").value = c?.vat_number||"";
+    $("q-address").value = c?.address||""; $("q-postal").value = c?.postal_address||""; $("q-phone").value = c?.phone||""; $("q-email").value = c?.email||"";
+    $("qClientHint").hidden = !qClientId;
+    if(qClientId) $("qClientHint").textContent = "Existing client. Changes here update their record.";
+  }
+  $("q-client").addEventListener("input", ()=>{ const cur = clientById(qClientId);
+    if(cur && cur.name.trim().toLowerCase()!==$("q-client").value.trim().toLowerCase()){ qClientId=null; $("qClientHint").hidden=true; } });
+  $("q-client").addEventListener("change", ()=>{ if(qClientId) return; const n=$("q-client").value.trim().toLowerCase();
+    const c = clients.find(x=>x.name.trim().toLowerCase()===n); if(c) qFillClient(c); });
+
+  function openQuote(q, opts={}){
+    qEditingId = q?.id || null;
+    $("qListView").hidden = true; $("qDocView").hidden = true; $("qEditView").hidden = false;
+    $("qeEyebrow").textContent = q ? `Quote ${q.quote_no}` : "New quote";
+    $("qeTitle").textContent = q ? (qClient(q).company || qClient(q).name || q.quote_no) : "New quote";
+    qFillClient(q ? qClient(q) : opts.client || null);
+    $("q-endclient").value = q?.end_client||""; $("q-ref").value = q?.client_ref||"";
+    $("q-type").value = q?.event_type || opts.type || "Corporate event"; $("q-area").value = q?.area || opts.area || "Conference";
+    $("q-session").value = q?.session||"full";
+    $("q-start").value = q?.start_date || opts.start || selected; $("q-end").value = q?.end_date || opts.start || selected;
+    $("q-guests").value = q?.guests_text||""; $("q-date").value = q?.quote_date || iso(new Date()); $("q-valid").value = q?.valid_days || 30;
+    $("q-status").value = q?.status || "draft"; $("q-vatrate").value = q ? Number(q.vat_rate) : 0; $("q-notes").value = q?.notes||"";
+    qItems = q ? (q.items||[]).map(i=>({qty:Number(i.qty)||0, description:i.description||"", unit_price:Number(i.unit_price)||0})) : [];
+    renderItems(); qCheck(); window.scrollTo(0,0);
+  }
+  function renderItems(){
+    $("qItems").innerHTML = `<div class="irow head"><span>Qty</span><span>Description</span><span>Unit price (P)</span><span style="text-align:right">Amount</span><span></span></div>` +
+      (qItems.length ? qItems.map((it,i)=>`<div class="irow" data-i="${i}">
+        <input class="q" type="number" min="0" step="1" inputmode="decimal" value="${it.qty}" data-f="qty" aria-label="Quantity">
+        <input class="d" value="${esc(it.description)}" data-f="description" list="priceOptions" placeholder="Description" aria-label="Description">
+        <input class="pr money" type="number" min="0" step="0.01" inputmode="decimal" value="${it.unit_price}" data-f="unit_price" aria-label="Unit price">
+        <span class="amt" data-amt="${i}">${qm(it.qty*it.unit_price)}</span>
+        <button type="button" class="ghost rm" data-rm="${i}" aria-label="Remove line">✕</button></div>`).join("")
+      : `<div class="empty">No items yet. Add venue hire, accommodation, catering or drinks from the price list below.</div>`);
+    qTotals();
+  }
+  function qTotals(){
+    const sub = qItems.reduce((a,i)=>a+Math.round(i.qty*i.unit_price*100)/100,0);
+    const vr = Number($("q-vatrate").value||0), vat = Math.round(sub*vr)/100;
+    $("qTotals").innerHTML = `<span>Subtotal</span><span>P ${qm(sub)}</span><span>VAT ${vr?`(${vr}%)`:""}</span><span>P ${qm(vat)}</span><span class="t">Total</span><span class="t">P ${qm(sub+vat)}</span>`;
+    $("qBarTotal").textContent = `Total P ${qm(sub+vat)} · deposit (50%) P ${qm((sub+vat)/2)}`;
+  }
+  $("qItems").addEventListener("input", e=>{
+    const row = e.target.closest("[data-i]"); if(!row) return; const i = +row.dataset.i, f = e.target.dataset.f;
+    qItems[i][f] = f==="description" ? e.target.value : Number(e.target.value||0);
+    if(f==="description"){ const p = prices.find(x=>x.active && x.description===e.target.value);
+      if(p && !qItems[i].unit_price){ qItems[i].unit_price = Number(p.unit_price); row.querySelector('[data-f="unit_price"]').value = Number(p.unit_price); } }
+    row.querySelector(".amt").textContent = qm(qItems[i].qty*qItems[i].unit_price); qTotals();
+  });
+  $("qItems").addEventListener("click", e=>{ const b=e.target.closest("[data-rm]"); if(!b) return; qItems.splice(+b.dataset.rm,1); renderItems(); });
+  $("q-addprice").addEventListener("change", ()=>{
+    const p = prices.find(x=>x.id===$("q-addprice").value); $("q-addprice").value=""; if(!p) return;
+    const guests = parseInt(($("q-guests").value.match(/(\d+)\D*$/)||[])[1]) || 1;
+    const perHead = /per person|buffet|lunch|dinner|breakfast/i.test(p.description);
+    qItems.push({qty: perHead ? guests : 1, description:p.description, unit_price:Number(p.unit_price)}); renderItems();
+  });
+  $("q-addblank").onclick = ()=>{ qItems.push({qty:1, description:"", unit_price:0}); renderItems();
+    const rows = $("qItems").querySelectorAll(".irow:not(.head)"); rows[rows.length-1]?.querySelector(".d")?.focus(); };
+  $("q-vatrate").addEventListener("input", qTotals);
+
+  function qForm(){
+    return { client:$("q-client").value.trim(), status:$("q-status").value, area:$("q-area").value, session:$("q-session").value,
+      start:$("q-start").value, end:$("q-end").value || $("q-start").value };
+  }
+  function qCheck(){
+    const f = qForm(), el = $("qClash");
+    if(f.start && f.end && f.end < f.start){ el.hidden=false; el.innerHTML="<b>Dates.</b> The end date is before the start date."; return false; }
+    const linked = qEditingId ? quotes.find(x=>x.id===qEditingId)?.booking_id : null;
+    const cand = {id:linked||"__new", area:f.area, session:f.session, start:f.start, end:f.end, status:Q2B[f.status]};
+    const hit = f.start ? findClashes(cand, bookings) : [];
+    if(!hit.length){
+      const soft = f.start && f.status==="draft" ? findClashes({...cand,status:"quoted"}, bookings) : [];
+      el.hidden = !soft.length;
+      if(soft.length) el.innerHTML = `<b>Heads up.</b> ${soft.map(b=>esc(b.client)).join(", ")} already ${soft.length>1?"hold":"holds"} this slot. You can save the draft, but it can't be sent until that booking moves or is cancelled.`;
+      return true;
+    }
+    el.hidden=false;
+    el.innerHTML = `<b>Double booking.</b> This slot is already held by ${hit.map(b=>`${esc(b.client)} (${esc(b.area)}, ${STAT[b.status].toLowerCase()}, ${short(b.start)})`).join("; ")}. Change the date, area or session, or keep this quote as a draft.`;
+    return false;
+  }
+  ["q-area","q-session","q-start","q-end","q-status"].forEach(id=>$(id).addEventListener("input", ()=>{
+    if(id==="q-start" && (!$("q-end").value || $("q-end").value < $("q-start").value)) $("q-end").value = $("q-start").value;
+    qCheck(); }));
+
+  async function saveQuote(thenView){
+    const f = qForm();
+    if(!f.client){ $("q-client").focus(); toast("Add the client name first."); return; }
+    if(!f.start){ $("q-start").focus(); return; }
+    if(!qCheck()){ toast("Not saved: that slot is already taken."); $("qClash").scrollIntoView({block:"center"}); return; }
+    const items = qItems.filter(i=>i.description.trim() || i.unit_price).map(i=>({qty:i.qty, description:i.description.trim(), unit_price:i.unit_price}));
+    $("qSave").disabled = $("qSaveView").disabled = true;
+    try{
+      const v = id => $(id).value.trim() || null;
+      const clientRow = {name:f.client, company:v("q-company"), vat_number:v("q-vat"), address:v("q-address"), postal_address:v("q-postal"), phone:v("q-phone"), email:v("q-email")};
+      let cid = qClientId;
+      if(cid){ const r = await sb.from("clients").update(clientRow).eq("id", cid); if(r.error) throw r.error; }
+      else { const r = await sb.from("clients").insert(clientRow).select("id").single(); if(r.error) throw r.error; cid = r.data.id; qClientId = cid; }
+      const row = {client_id:cid, end_client:v("q-endclient"), client_ref:v("q-ref"), event_type:$("q-type").value, area:f.area, session:f.session,
+        start_date:f.start, end_date:f.end, guests_text:v("q-guests"), quote_date:$("q-date").value || iso(new Date()),
+        valid_days:Number($("q-valid").value||30), status:f.status, items, vat_rate:Number($("q-vatrate").value||0), notes:v("q-notes")};
+      const r = qEditingId ? await sb.from("quotes").update(row).eq("id", qEditingId).select().single()
+                           : await sb.from("quotes").insert(row).select().single();
+      if(r.error) throw r.error;
+      qEditingId = r.data.id;
+      toast(`${r.data.quote_no} saved`);
+      await loadAll();
+      if(thenView) showDoc(r.data.id); else openQuote(quotes.find(x=>x.id===r.data.id));
+    }catch(err){
+      if(err?.code==="23P01"){ await loadAll(); qCheck(); toast("Not saved: someone has just booked that slot."); }
+      else toast("Couldn't save: " + (err?.message || "check your connection and try again."));
+    }finally{ $("qSave").disabled = $("qSaveView").disabled = false; }
+  }
+  $("qForm").addEventListener("submit", e=>{ e.preventDefault(); saveQuote(false); });
+  $("qSaveView").onclick = ()=>saveQuote(true);
+  $("qCancel").onclick = $("qeBack").onclick = ()=>{ showQList(); window.scrollTo(0,0); };
+  $("newQuoteBtn").onclick = ()=>openQuote(null);
+
+  // ---- printable quote ----
+  function showDoc(id, quiet){
+    const q = quotes.find(x=>x.id===id); if(!q) return;
+    docQuoteId = id;
+    $("qListView").hidden = true; $("qEditView").hidden = true; $("qDocView").hidden = false;
+    const c = qClient(q), b = bookings.find(x=>x.id===q.booking_id);
+    const to = [c.company && c.name ? `Attn: ${c.name}` : "", c.vat_number ? `VAT: ${c.vat_number}` : "", c.address, c.postal_address,
+      c.phone ? `Tel: ${c.phone}` : "", c.email ? `Email: ${c.email}` : ""].filter(Boolean).map(esc).join("<br>");
+    const items = (q.items||[]);
+    $("qdoc").innerHTML = `
+      <div class="qtop"><img src="logo.png" alt="Base Bush Lounge">
+        <div class="qno"><h2>QUOTATION NO: ${esc(q.quote_no)}</h2>${q.client_ref?`<div><b>CLIENT REF: ${esc(q.client_ref)}</b></div>`:""}<div>DATE: ${q.quote_date.replace(/-/g,"/")}</div></div></div>
+      <div class="parties">
+        <div><b>Base Bush Lounge</b><br>Mokolodi, Gaborone, Botswana<br>www.basebushlounge.com</div>
+        <div><b>To: ${esc(c.company||c.name||"")}</b>${to?"<br>"+to:""}</div>
+      </div>
+      <table class="evt"><thead><tr><th>End client</th><th>Venue</th><th>Event date</th><th class="c">No. of guests</th><th class="c">Days</th></tr></thead>
+        <tbody><tr><td>${esc(q.end_client||c.company||c.name||"")}</td><td>Base Bush Lounge - Mokolodi${q.area!=="Entire venue"?`<br>(${esc(q.area)})`:""}</td>
+        <td>${esc(qDates(q))}</td><td class="c">${esc(q.guests_text||"—")}</td><td class="c">${qDays(q)}</td></tr></tbody></table>
+      <table class="lines"><thead><tr><th class="c" style="width:80px">Quantity</th><th>Description</th><th class="r" style="width:120px">Unit price</th><th class="r" style="width:120px">Amount</th></tr></thead>
+        <tbody>${items.length ? items.map(i=>`<tr><td class="c">${qtyFmt(i.qty)}</td><td>${esc(i.description)}</td><td class="r">${qm(i.unit_price)}</td><td class="r">${qm(Number(i.qty)*Number(i.unit_price))}</td></tr>`).join("")
+          : `<tr><td colspan="4" class="c" style="color:#777">No line items</td></tr>`}</tbody></table>
+      <div class="bottom">
+        <div class="bank"><div class="h">Base Bush Lounge banking details</div>
+          <dl><dt>Bank</dt><dd>First National Bank (FNB)</dd><dt>Branch</dt><dd>Main Branch</dd><dt>Account number</dt><dd>63128295804</dd></dl></div>
+        <div class="sums"><div><span>SUBTOTAL</span><span>${qm(q.subtotal)}</span></div><div><span>VAT${Number(q.vat_rate)?` (${Number(q.vat_rate)}%)`:""}</span><span>${qm(q.vat_amount)}</span></div>
+          <div class="tot"><span>TOTAL</span><span>P${qm(q.total)}</span></div></div>
+      </div>
+      <div class="terms"><h4>Terms and Conditions</h4><ol>
+        <li>Quotation is valid for ${q.valid_days===30?"thirty (30)":q.valid_days} days from date of issue.</li>
+        <li>A 50% deposit is required to secure the booking date.</li>
+        <li>Balance is payable before the event date.</li>
+        <li>Final guest numbers to be confirmed at least 3 days before the event; charges are based on confirmed numbers.</li></ol></div>
+      <div class="foot">Base Bush Lounge · Mokolodi · www.basebushlounge.com</div>`;
+    const dep = b ? ` Deposit received ${pula(b.deposit)} of ${pula(q.total/2)} due.` : "";
+    $("qdNote").innerHTML = `<span class="pill ${q.status}">${QSTAT[q.status]}</span> ${b ? `On the calendar as <b>${STAT[b.status].toLowerCase()}</b>.${q.status==="confirmed"?dep:""} <button type="button" data-gocal="${esc(b.id)}">Show on calendar</button>` : ""}`;
+    $("qdSent").hidden = q.status!=="draft"; $("qdConfirm").hidden = q.status==="confirmed" || q.status==="declined";
+    if(!quiet) window.scrollTo(0,0);
+  }
+  async function setQuoteStatus(status){
+    const q = quotes.find(x=>x.id===docQuoteId); if(!q) return;
+    const r = await sb.from("quotes").update({status}).eq("id", q.id);
+    if(r.error){ toast(r.error.code==="23P01" ? "Can't do that: the date is already held by another booking." : "Couldn't update: "+r.error.message); return; }
+    toast(status==="confirmed" ? `${q.quote_no} confirmed. The booking is confirmed on the calendar.` : `${q.quote_no} marked as sent. The date is now held.`);
+    await loadAll(); showDoc(q.id, true);
+  }
+  $("qdSent").onclick = ()=>setQuoteStatus("sent");
+  $("qdConfirm").onclick = ()=>setQuoteStatus("confirmed");
+  $("qdPrint").onclick = ()=>window.print();
+  $("qdEdit").onclick = ()=>openQuote(quotes.find(x=>x.id===docQuoteId));
+  $("qdBack").onclick = ()=>{ showQList(); window.scrollTo(0,0); };
+
+  $("homeNewQuote").onclick = ()=>{ go("quotes"); openQuote(null); };
+  $("homeNewBooking").onclick = ()=>{ go("bookings"); openForm(null); };
+
+  document.addEventListener("click", async e=>{
+    const nv = e.target.closest('[data-nav="quotes"]'); if(nv && location.hash==="#quotes"){ showQList(); return; }
+    const vq = e.target.closest("[data-viewq]"); if(vq){ showDoc(vq.dataset.viewq); return; }
+    const eq = e.target.closest("[data-editq]"); if(eq){ openQuote(quotes.find(x=>x.id===eq.dataset.editq)); return; }
+    const oq = e.target.closest("[data-openquote]"); if(oq){ const id=oq.dataset.openquote; go("quotes"); showDoc(id); return; }
+    const gc = e.target.closest("[data-gocal]"); if(gc){ const b=bookings.find(x=>x.id===gc.dataset.gocal); if(!b) return;
+      go("bookings"); selected=b.start; const d=parse(b.start); view=new Date(d.getFullYear(),d.getMonth(),1); render(); openForm(b); return; }
+    const gb = e.target.closest("[data-gobook]"); if(gb){ go("bookings"); return; }
+    const ps = e.target.closest("[data-psave]"); if(ps){ const row = ps.closest("[data-prow]");
+      const upd = {description: row.querySelector('[data-pf="description"]').value.trim(), unit_price: Number(row.querySelector('[data-pf="unit_price"]').value||0)};
+      if(!upd.description){ toast("The description can't be empty."); return; }
+      const r = await sb.from("price_list").update(upd).eq("id", ps.dataset.psave); toast(r.error ? "Couldn't save: "+r.error.message : "Price saved"); if(!r.error) loadAll(); return; }
+    const pd = e.target.closest("[data-pdel]"); if(pd){
+      if(!pd.dataset.armed){ pd.dataset.armed="1"; pd.textContent="Tap to confirm"; pd.classList.add("danger"); return; }
+      const r = await sb.from("price_list").update({active:false}).eq("id", pd.dataset.pdel);
+      if(!r.error){ await sb.from("price_list").delete().eq("id", pd.dataset.pdel); toast("Removed from price list"); loadAll(); } else toast("Couldn't remove: "+r.error.message); return; }
+  });
+
   // ---------- auth ----------
   $("authForm").addEventListener("submit", async e=>{
     e.preventDefault();
@@ -698,7 +1284,7 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
     me = (session.user.email||"").toLowerCase();
     const st = await sb.rpc("is_staff");
     if(!st.data){ $("deniedEmail").textContent = me; show("deniedView"); return; }
-    show("appView"); $("who").textContent = me;
+    show("appView"); $("who").textContent = me; route();
     isAdmin = !!(await sb.rpc("is_admin")).data;
     $("staffPanel").hidden = !isAdmin;
     if(started) return; started = true;
@@ -706,6 +1292,7 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
     channel = sb.channel("bookings-live")
       .on("postgres_changes",{event:"*",schema:"public",table:"bookings"}, scheduleReload)
       .on("postgres_changes",{event:"*",schema:"public",table:"clients"}, scheduleReload)
+      .on("postgres_changes",{event:"*",schema:"public",table:"quotes"}, scheduleReload)
       .subscribe();
     document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) scheduleReload(); });
   }
