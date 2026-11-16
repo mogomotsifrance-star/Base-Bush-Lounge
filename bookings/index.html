@@ -561,7 +561,7 @@ input:disabled{opacity:.7}
     <div class="view" id="qEditView" hidden>
       <header>
         <div><p class="eyebrow" id="qeEyebrow">New quote</p><h1 id="qeTitle">New quote</h1></div>
-        <button type="button" id="qeBack">← All quotes</button>
+        <div class="quick"><button type="button" id="qeJump">Line items ↓</button><button type="button" id="qeBack">← All quotes</button></div>
       </header>
       <form id="qForm" novalidate class="view">
         <div class="qgrid">
@@ -610,12 +610,13 @@ input:disabled{opacity:.7}
             </div>
           </section>
         </div>
-        <section class="panel"><p class="eyebrow">Line items</p><h3>What's included</h3>
+        <section class="panel" id="qItemsPanel"><p class="eyebrow">Line items</p><h3>What's included</h3>
           <div class="items" id="qItems"></div>
           <div class="itemtools">
+            <button type="button" class="primary" id="q-addblank">+ Add line item</button>
             <select id="q-addprice" aria-label="Add from price list"></select>
-            <button type="button" id="q-addblank">Add blank line</button>
           </div>
+          <p class="hint">Type any description and price on a line, or pick from the price list to fill the price in for you.</p>
           <datalist id="priceOptions"></datalist>
           <div class="row" style="margin-top:14px;align-items:start">
             <label>VAT %<input type="number" id="q-vatrate" min="0" max="100" step="0.5" inputmode="decimal" style="max-width:120px"></label>
@@ -1133,7 +1134,7 @@ input:disabled{opacity:.7}
     $("q-start").value = q?.start_date || opts.start || selected; $("q-end").value = q?.end_date || opts.end || opts.start || selected;
     $("q-guests").value = q?.guests_text || opts.guests || ""; $("q-date").value = q?.quote_date || iso(new Date()); $("q-valid").value = q?.valid_days || 30;
     $("q-status").value = q?.status || opts.status || "draft"; $("q-vatrate").value = q ? Number(q.vat_rate) : 0; $("q-notes").value = q?.notes||"";
-    qItems = q ? (q.items||[]).map(i=>({qty:Number(i.qty)||0, description:i.description||"", unit_price:Number(i.unit_price)||0})) : [];
+    qItems = q ? (q.items||[]).map(i=>({qty:Number(i.qty)||0, description:i.description||"", unit_price:Number(i.unit_price)||0})) : [{qty:1, description:"", unit_price:0}];
     renderItems(); qCheck(); window.scrollTo(0,0);
   }
   function renderItems(){
@@ -1144,7 +1145,7 @@ input:disabled{opacity:.7}
         <input class="pr money" type="number" min="0" step="0.01" inputmode="decimal" value="${it.unit_price}" data-f="unit_price" aria-label="Unit price">
         <span class="amt" data-amt="${i}">${qm(it.qty*it.unit_price)}</span>
         <button type="button" class="ghost rm" data-rm="${i}" aria-label="Remove line">✕</button></div>`).join("")
-      : `<div class="empty">No items yet. Add venue hire, accommodation, catering or drinks from the price list below.</div>`);
+      : `<div class="empty">No line items yet. Press “+ Add line item” or pick from the price list.</div>`);
     qTotals();
   }
   function qTotals(){
@@ -1165,11 +1166,15 @@ input:disabled{opacity:.7}
     const p = prices.find(x=>x.id===$("q-addprice").value); $("q-addprice").value=""; if(!p) return;
     const guests = parseInt(($("q-guests").value.match(/(\d+)\D*$/)||[])[1]) || 1;
     const perHead = /per person|buffet|lunch|dinner|breakfast/i.test(p.description);
-    qItems.push({qty: perHead ? guests : 1, description:p.description, unit_price:Number(p.unit_price)}); renderItems();
+    const blank = qItems.findIndex(i=>!i.description.trim() && !i.unit_price);
+    const item = {qty: perHead ? guests : 1, description:p.description, unit_price:Number(p.unit_price)};
+    if(blank>=0) qItems[blank] = item; else qItems.push(item);
+    renderItems();
   });
   $("q-addblank").onclick = ()=>{ qItems.push({qty:1, description:"", unit_price:0}); renderItems();
     const rows = $("qItems").querySelectorAll(".irow:not(.head)"); rows[rows.length-1]?.querySelector(".d")?.focus(); };
   $("q-vatrate").addEventListener("input", qTotals);
+  $("qeJump").onclick = ()=>$("qItemsPanel").scrollIntoView({behavior:"smooth", block:"start"});
 
   function qForm(){
     return { client:$("q-client").value.trim(), status:$("q-status").value, area:$("q-area").value, session:$("q-session").value,
