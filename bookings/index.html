@@ -266,6 +266,9 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
   #qdoc{position:absolute;left:0;top:0;width:100%;min-height:0;box-shadow:none;padding:0}
   .docwrap{overflow:visible}
 }
+.check{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);font-weight:500;cursor:pointer}
+.check input{width:18px;height:18px;min-width:18px;padding:0;margin:0;accent-color:var(--leaf)}
+input:disabled{opacity:.7}
 </style>
 </head>
 <body>
@@ -399,6 +402,7 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
             <datalist id="clientList"></datalist>
             <p class="hint" id="clientHint" hidden></p>
             <label>Company / organisation<input id="f-company" autocomplete="off" placeholder="Optional"></label>
+            <label class="check"><input type="checkbox" id="f-same"> Same as client name</label>
             <div class="row">
               <label>Phone<input id="f-phone" type="tel" inputmode="tel" placeholder="+267 7x xxx xxx"></label>
               <label>Email<input id="f-email" type="email" inputmode="email" autocomplete="off" placeholder="name@example.com"></label>
@@ -565,7 +569,7 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
               <label>Client name<input id="q-client" autocomplete="off" list="clientList" placeholder="Person or company booking" required></label>
               <p class="hint" id="qClientHint" hidden></p>
               <div class="row">
-                <label>Company<input id="q-company" autocomplete="off" placeholder="e.g. Prolearn Proprietary Limited"></label>
+                <label>Company<input id="q-company" autocomplete="off" placeholder="e.g. Prolearn Proprietary Limited"><span class="check"><input type="checkbox" id="q-same" aria-label="Company same as client name"> Same as client name</span></label>
                 <label>VAT number<input id="q-vat" autocomplete="off" placeholder="Optional"></label>
               </div>
               <label>Physical address<input id="q-address" autocomplete="off" placeholder="Plot, building, area"></label>
@@ -835,7 +839,7 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
     $("f-client").value = c?.name||""; $("f-company").value = c?.company||""; $("f-phone").value = c?.phone||"";
     $("f-email").value = c?.email||""; $("f-idno").value = c?.id_number||""; $("f-address").value = c?.address||""; $("f-source").value = c?.source||"";
     $("f-cname").value = c?.contact_name||""; $("f-cphone").value = c?.contact_phone||""; $("f-cemail").value = c?.contact_email||"";
-    clientHint();
+    fSameInit(); clientHint();
   }
   function clientHint(){
     const h=$("clientHint"); h.hidden=!clientId;
@@ -975,6 +979,16 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
   });
 
 
+  // "Same as client name": company mirrors the client name while ticked
+  function sameLink(nameId, compId, boxId){
+    const sync = ()=>{ const on = $(boxId).checked; $(compId).disabled = on; if(on) $(compId).value = $(nameId).value.trim(); };
+    $(boxId).addEventListener("change", sync);
+    $(nameId).addEventListener("input", ()=>{ if($(boxId).checked) $(compId).value = $(nameId).value.trim(); });
+    return ()=>{ const n=$(nameId).value.trim(), c=$(compId).value.trim(); $(boxId).checked = !!n && n===c; $(compId).disabled = $(boxId).checked; };
+  }
+  const fSameInit = sameLink("f-client","f-company","f-same");
+  const qSameInit = sameLink("q-client","q-company","q-same");
+
   // ================= HOME =================
   function renderHome(){
     const h = new Date().getHours();
@@ -1036,7 +1050,7 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
     ["all","draft","sent","confirmed","declined"].forEach(t=>{ $("qc-"+t).textContent = t==="all" ? base.length : base.filter(x=>x.status===t).length; });
     const list = qTab==="all" ? base : base.filter(x=>x.status===qTab);
     const empty = `<div class="empty">${q ? "No quotes match that search." : qTab==="all" ? "No quotes yet. Use “New quote” to create the first one." : `No ${QSTAT[qTab].toLowerCase()} quotes.`}</div>`;
-    const who = x => { const c=qClient(x); return `<strong>${esc(c.company||c.name||"—")}</strong>${c.company&&c.name?`<div class="sub2">${esc(c.name)}</div>`:""}${x.end_client?`<div class="sub2">For ${esc(x.end_client)}</div>`:""}`; };
+    const who = x => { const c=qClient(x); return `<strong>${esc(c.company||c.name||"—")}</strong>${c.company&&c.name&&c.company!==c.name?`<div class="sub2">${esc(c.name)}</div>`:""}${x.end_client?`<div class="sub2">For ${esc(x.end_client)}</div>`:""}`; };
     $("qBody").innerHTML = list.length ? list.map(x=>`<tr>
       <td style="white-space:nowrap"><strong>${esc(x.quote_no)}</strong><div class="sub2">${nice(x.quote_date,{day:"numeric",month:"short",year:"numeric"})}</div></td>
       <td style="min-width:150px">${who(x)}</td>
@@ -1085,7 +1099,7 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
     qClientId = c?.id || null;
     $("q-client").value = c?.name||""; $("q-company").value = c?.company||""; $("q-vat").value = c?.vat_number||"";
     $("q-address").value = c?.address||""; $("q-postal").value = c?.postal_address||""; $("q-phone").value = c?.phone||""; $("q-email").value = c?.email||"";
-    $("qClientHint").hidden = !qClientId;
+    qSameInit(); $("qClientHint").hidden = !qClientId;
     if(qClientId) $("qClientHint").textContent = "Existing client. Changes here update their record.";
   }
   $("q-client").addEventListener("input", ()=>{ const cur = clientById(qClientId);
@@ -1206,7 +1220,7 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
     docQuoteId = id;
     $("qListView").hidden = true; $("qEditView").hidden = true; $("qDocView").hidden = false;
     const c = qClient(q), b = bookings.find(x=>x.id===q.booking_id);
-    const to = [c.company && c.name ? `Attn: ${c.name}` : "", c.vat_number ? `VAT: ${c.vat_number}` : "", c.address, c.postal_address,
+    const to = [c.company && c.name && c.company!==c.name ? `Attn: ${c.name}` : "", c.vat_number ? `VAT: ${c.vat_number}` : "", c.address, c.postal_address,
       c.phone ? `Tel: ${c.phone}` : "", c.email ? `Email: ${c.email}` : ""].filter(Boolean).map(esc).join("<br>");
     const items = (q.items||[]);
     $("qdoc").innerHTML = `
