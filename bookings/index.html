@@ -4,7 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<meta name="theme-color" content="#2f5d46">
+<meta name="theme-color" content="#1d3b2c">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BBL Staff">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Base Bush Lounge Bookings</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&display=swap">
@@ -383,10 +390,15 @@ input:disabled{opacity:.7}
     <img class="auth-logo" src="logo.png" alt="Base Bush Lounge">
     <p class="eyebrow">Staff only</p>
     <h1>Base Bush Lounge Bookings</h1>
-    <p class="sub" id="authMsg">Enter your work email and we'll send you a sign-in link.</p>
+    <p class="sub" id="authMsg">Enter your work email and we'll email you a sign-in code.</p>
     <form id="authForm" novalidate>
       <label>Email<input type="email" id="authEmail" autocomplete="email" inputmode="email" required placeholder="you@example.com"></label>
-      <button type="submit" class="primary" id="authBtn">Send sign-in link</button>
+      <button type="submit" class="primary" id="authBtn">Email me a sign-in code</button>
+    </form>
+    <form id="codeForm" novalidate hidden>
+      <label>Sign-in code from the email<input id="authCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="6-digit code" style="font-size:20px;letter-spacing:.2em"></label>
+      <button type="submit" class="primary" id="codeBtn">Sign in</button>
+      <button type="button" class="ghost" id="codeBack">Use a different email</button>
     </form>
   </div>
 </div>
@@ -421,7 +433,8 @@ input:disabled{opacity:.7}
         <p class="hh-eyebrow">Base Bush Lounge · Mokolodi</p>
         <h1 id="greet">Welcome</h1>
         <p class="hh-sub" id="hhDate">House, Conference and Restaurant</p>
-        <div class="hh-actions"><button class="hh-primary" id="homeNewQuote">+ New quote</button><button class="hh-ghost" id="homeNewBooking">+ New booking</button></div>
+        <div class="hh-actions"><button class="hh-primary" id="homeNewQuote">+ New quote</button><button class="hh-ghost" id="homeNewBooking">+ New booking</button><button class="hh-ghost" id="installBtn" hidden>⤓ Install app</button></div>
+        <p class="hh-sub" id="iosHint" hidden style="font-size:12.5px">On iPhone: tap Share, then “Add to Home Screen” to install the app.</p>
       </div>
       <img class="hh-logo" src="logo.png" alt="">
     </div>
@@ -1873,9 +1886,21 @@ input:disabled{opacity:.7}
     if(!email){ $("authEmail").focus(); return; }
     $("authBtn").disabled = true; $("authBtn").textContent = "Sending…";
     const {error} = await sb.auth.signInWithOtp({email, options:{emailRedirectTo: location.origin + location.pathname}});
-    $("authBtn").disabled = false; $("authBtn").textContent = "Send sign-in link";
-    $("authMsg").textContent = error ? "Couldn't send the link: " + error.message : `Check ${email} for a sign-in link and open it on this device.`;
+    $("authBtn").disabled = false; $("authBtn").textContent = "Email me a sign-in code";
+    if(error){ $("authMsg").textContent = "Couldn't send the email: " + error.message; return; }
+    $("authMsg").textContent = `We've emailed ${email}. Type the code from the email below, or open the email's link on this device.`;
+    $("authForm").hidden = true; $("codeForm").hidden = false; $("authCode").focus();
   });
+  $("codeForm").addEventListener("submit", async e=>{
+    e.preventDefault();
+    const token = $("authCode").value.replace(/\s/g,""), email = $("authEmail").value.trim();
+    if(token.length < 6){ $("authCode").focus(); return; }
+    $("codeBtn").disabled = true; $("codeBtn").textContent = "Checking…";
+    const {error} = await sb.auth.verifyOtp({email, token, type:"email"});
+    $("codeBtn").disabled = false; $("codeBtn").textContent = "Sign in";
+    if(error) $("authMsg").textContent = "That code didn't work. Check it, or request a new one. (" + error.message + ")";
+  });
+  $("codeBack").onclick = ()=>{ $("codeForm").hidden = true; $("authForm").hidden = false; $("authMsg").textContent = "Enter your work email and we'll email you a sign-in code."; };
   const signOut = async ()=>{ await sb.auth.signOut(); location.reload(); };
   $("signOut").onclick = signOut; $("deniedOut").onclick = signOut;
 
@@ -1899,6 +1924,15 @@ input:disabled{opacity:.7}
       .subscribe();
     document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) scheduleReload(); });
   }
+  // ---- installable app ----
+  if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  let installEvt = null;
+  window.addEventListener("beforeinstallprompt", e=>{ e.preventDefault(); installEvt = e; $("installBtn").hidden = false; });
+  $("installBtn").onclick = async ()=>{ if(!installEvt) return; installEvt.prompt(); await installEvt.userChoice.catch(()=>{}); installEvt = null; $("installBtn").hidden = true; };
+  window.addEventListener("appinstalled", ()=>{ $("installBtn").hidden = true; toast("App installed. Open it from your home screen."); });
+  if(!standalone && /iphone|ipad|ipod/i.test(navigator.userAgent)) $("iosHint").hidden = false;
+
   sb.auth.onAuthStateChange((evt, session)=>{
     if(session) startApp(session);
     else if(evt==="SIGNED_OUT" || evt==="INITIAL_SESSION") show("authView");
