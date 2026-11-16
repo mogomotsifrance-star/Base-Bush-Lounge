@@ -272,8 +272,8 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
   html,body{background:#fff!important}
   :root{padding:0}
   body *{visibility:hidden}
-  #qdoc,#qdoc *,#idoc,#idoc *{visibility:visible}
-  #qdoc,#idoc{position:absolute;left:0;top:0;width:100%;min-height:0;box-shadow:none;padding:0}
+  #qdoc,#qdoc *,#idoc,#idoc *,#cdoc,#cdoc *{visibility:visible}
+  #qdoc,#idoc,#cdoc{position:absolute;left:0;top:0;width:100%;min-height:0;box-shadow:none;padding:0}
   .docwrap{overflow:visible}
 }
 .check{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);font-weight:500;cursor:pointer}
@@ -381,6 +381,20 @@ input:disabled{opacity:.7}
 .steps{margin:6px 0 0;padding-left:18px;display:grid;gap:4px;font-size:12.5px;color:var(--muted)}
 .btnlink{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:8px;padding:7px 12px;color:var(--ink);text-decoration:none;background:var(--surface)}
 .btnlink:hover{border-color:var(--muted)}
+.qdoc .cterms{margin-top:16px;columns:2;column-gap:28px;font-size:10.5px;line-height:1.45}
+.qdoc .cterms section{break-inside:avoid;margin-bottom:10px}
+.qdoc .cterms h4{margin:0 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:.03em}
+.qdoc .cterms p{margin:0 0 4px}
+.qdoc .cterms ul{margin:0 0 4px;padding-left:16px}
+.qdoc .ctab{width:100%;border-collapse:collapse;margin:4px 0 6px}
+.qdoc .ctab th{background:#111;color:#fff;font-size:9.5px;padding:4px 6px}
+.qdoc .ctab td{padding:4px 6px;border-bottom:1px solid #ddd;font-size:10px}
+.qdoc .caccept{margin-top:16px;break-inside:avoid}
+.qdoc .caccept h4{margin:0 0 4px;font-size:12px}
+.qdoc .csign{width:100%;border-collapse:collapse;margin-top:8px}
+.qdoc .csign th{background:#111;color:#fff;padding:6px 9px;text-align:left;font-size:10.5px}
+.qdoc .csign td{border:1px solid #bbb;padding:12px 9px;height:22px}
+.qdoc .csign td:first-child{width:110px;font-weight:700;background:#f4f4f4}
 </style>
 </head>
 <body>
@@ -818,10 +832,22 @@ input:disabled{opacity:.7}
         <button type="button" id="qdSent">Mark as sent</button>
         <button type="button" class="primary" id="qdConfirm">Confirm booking</button>
         <button type="button" id="qdInvoice" hidden>Create invoice</button>
+        <button type="button" id="qdContract" hidden>Contract</button>
         <button type="button" id="qdPrint">Print / save PDF</button>
       </div>
       <p class="linknote" id="qdNote"></p>
       <div class="docwrap"><div class="qdoc" id="qdoc"></div></div>
+    </div>
+
+    <!-- Printable contract -->
+    <div class="view" id="cDocView" hidden>
+      <div class="docbar">
+        <button type="button" id="cdBack">← Back to quote</button>
+        <span style="flex:1"></span>
+        <button type="button" class="primary" id="cdPrint">Download / print contract (PDF)</button>
+      </div>
+      <p class="linknote" id="cdNote"></p>
+      <div class="docwrap"><div class="qdoc" id="cdoc"></div></div>
     </div>
   </div><!-- /quotesView -->
 
@@ -1426,7 +1452,7 @@ input:disabled{opacity:.7}
     $("homeView").hidden = view!=="home"; $("bookingsView").hidden = view!=="bookings"; $("quotesView").hidden = view!=="quotes"; $("invoicesView").hidden = view!=="invoices";
     document.querySelectorAll("[data-nav]").forEach(a=>a.setAttribute("aria-current", a.dataset.nav===view ? "page" : "false"));
     if(view!=="bookings"){ closeForm(); closeView(); }
-    if(view==="quotes" && $("qEditView").hidden && $("qDocView").hidden) showQList();
+    if(view==="quotes" && $("qEditView").hidden && $("qDocView").hidden && $("cDocView").hidden) showQList();
     if(view==="invoices" && $("iEditView").hidden && $("iDocView").hidden) showIList();
     document.title = (view==="home" ? "" : ({bookings:"Bookings",quotes:"Quotes",invoices:"Invoices"})[view]+" · ") + "Base Bush Lounge";
   }
@@ -1447,7 +1473,7 @@ input:disabled{opacity:.7}
   const qDates = q => q.start_date===q.end_date ? nice(q.start_date,{day:"numeric",month:"short",year:"numeric"})
     : `${short(q.start_date)} – ${nice(q.end_date,{day:"numeric",month:"short",year:"numeric"})}`;
 
-  function showQList(){ $("qListView").hidden=false; $("qEditView").hidden=true; $("qDocView").hidden=true; qEditingId=null; docQuoteId=null; }
+  function showQList(){ $("cDocView").hidden=true; $("qListView").hidden=false; $("qEditView").hidden=true; $("qDocView").hidden=true; qEditingId=null; docQuoteId=null; }
 
   function renderQuotes(){
     const q = $("qSearch").value.trim().toLowerCase();
@@ -1463,13 +1489,13 @@ input:disabled{opacity:.7}
       <td style="white-space:nowrap">${esc(qDates(x))}</td><td>${esc(x.event_type)}</td><td>${esc(x.area)}</td>
       <td class="num">${pula(x.total)}</td>
       <td><span class="pill ${x.status}">${QSTAT[x.status]}</span></td>
-      <td style="white-space:nowrap"><button type="button" data-viewq="${esc(x.id)}">View</button> <button type="button" data-editq="${esc(x.id)}">Edit</button></td></tr>`).join("")
+      <td style="white-space:nowrap"><button type="button" data-viewq="${esc(x.id)}">View</button> <button type="button" data-editq="${esc(x.id)}">Edit</button>${x.status==="confirmed"?` <button type="button" data-contract="${esc(x.id)}">Contract</button>`:""}</td></tr>`).join("")
       : `<tr><td colspan="8">${empty}</td></tr>`;
     $("qCards").innerHTML = list.length ? list.map(x=>{ const c=qClient(x); return `<div class="bcard">
       <div class="top"><strong>${esc(x.quote_no)} · ${esc(c.company||c.name||"—")}</strong><span class="pill ${x.status}">${QSTAT[x.status]}</span></div>
       <div class="meta">${esc(qDates(x))} · ${esc(x.area)} · ${esc(x.event_type)}</div>
       <div class="meta">Total ${pula(x.total)}${x.guests_text?` · ${esc(x.guests_text)} guests`:""}</div>
-      <div class="actions"><button type="button" data-viewq="${esc(x.id)}">View</button><button type="button" data-editq="${esc(x.id)}">Edit</button></div></div>`; }).join("") : empty;
+      <div class="actions"><button type="button" data-viewq="${esc(x.id)}">View</button><button type="button" data-editq="${esc(x.id)}">Edit</button>${x.status==="confirmed"?`<button type="button" data-contract="${esc(x.id)}">Contract</button>`:""}</div></div>`; }).join("") : empty;
   }
   $("qtabs").addEventListener("click", e=>{ const t=e.target.closest("[data-qtab]"); if(!t) return; qTab=t.dataset.qtab;
     $("qtabs").querySelectorAll("[data-qtab]").forEach(x=>x.setAttribute("aria-selected", x===t?"true":"false")); renderQuotes(); });
@@ -1515,7 +1541,7 @@ input:disabled{opacity:.7}
 
   function openQuote(q, opts={}){
     qEditingId = q?.id || null;
-    $("qListView").hidden = true; $("qDocView").hidden = true; $("qEditView").hidden = false;
+    $("cDocView").hidden = true; $("qListView").hidden = true; $("qDocView").hidden = true; $("qEditView").hidden = false;
     $("qeEyebrow").textContent = q ? `Quote ${q.quote_no}` : "New quote";
     $("qeTitle").textContent = q ? (qClient(q).company || qClient(q).name || q.quote_no) : "New quote";
     qFillClient(q ? qClient(q) : opts.client || null);
@@ -1656,7 +1682,7 @@ input:disabled{opacity:.7}
   function showDoc(id, quiet){
     const q = quotes.find(x=>x.id===id); if(!q) return;
     docQuoteId = id;
-    $("qListView").hidden = true; $("qEditView").hidden = true; $("qDocView").hidden = false;
+    $("cDocView").hidden = true; $("qListView").hidden = true; $("qEditView").hidden = true; $("qDocView").hidden = false;
     const c = qClient(q), b = bookings.find(x=>x.id===q.booking_id);
     $("qdoc").innerHTML = `
       <div class="qtop"><img src="logo.png" alt="Base Bush Lounge">
@@ -1675,6 +1701,9 @@ input:disabled{opacity:.7}
       ${DOC_FOOT}`;
     const inv = invoices.find(x=>x.quote_id===q.id && x.status==="current");
     $("qdInvoice").hidden = !(inv || q.status==="confirmed");
+    const ck = contractKind(q);
+    $("qdContract").hidden = q.status!=="confirmed";
+    $("qdContract").textContent = ck ? `Contract (${ck==="small"?"small":"large"} events)` : "Contract";
     $("qdInvoice").textContent = inv ? `View invoice ${inv.invoice_no}` : "Create invoice";
     $("qdInvoice").className = inv ? "" : "primary";
     const dep = b ? ` Deposit received ${pula(b.deposit)} of ${pula(q.total/2)} due.` : "";
@@ -1701,6 +1730,7 @@ input:disabled{opacity:.7}
   document.addEventListener("click", async e=>{
     const nv = e.target.closest('[data-nav="quotes"]'); if(nv && location.hash==="#quotes"){ showQList(); return; }
     const ni = e.target.closest('[data-nav="invoices"]'); if(ni && location.hash==="#invoices"){ showIList(); return; }
+    const ct = e.target.closest("[data-contract]"); if(ct){ showContract(ct.dataset.contract); return; }
     const vq = e.target.closest("[data-viewq]"); if(vq){ showDoc(vq.dataset.viewq); return; }
     const eq = e.target.closest("[data-editq]"); if(eq){ openQuote(quotes.find(x=>x.id===eq.dataset.editq)); return; }
     const oq = e.target.closest("[data-openquote]"); if(oq){ const id=oq.dataset.openquote; go("quotes"); showDoc(id); return; }
@@ -1717,6 +1747,165 @@ input:disabled{opacity:.7}
       if(!r.error){ await sb.from("price_list").delete().eq("id", pd.dataset.pdel); toast("Removed from price list"); loadAll(); } else toast("Couldn't remove: "+r.error.message); return; }
   });
 
+
+  // ================= CONTRACTS (text from "Base Bush Lounge - Small/Large Events TCs 2026") =================
+  const CONTRACTS = {
+    small: { title: "TERMS AND CONDITIONS FOR SMALL EVENTS 2026", label: "Small events (up to 50 guests)", sections: [
+      ["1. Scope", [
+        "1.1 These Terms apply to small private events at Base Bush Lounge of up to 50 guests. Examples are birthdays, baby showers, private dinners, small meetings and family gatherings.",
+        "1.2 Events above 50 guests, or with amplified live entertainment, fall under the standard Terms and Conditions for Venue Hire 2026.",
+        "1.3 By signing the booking form or paying a deposit, the client accepts these Terms."]],
+      ["2. Booking, Payment & Deposits", [
+        "2.1 All bookings must be confirmed in writing (email or WhatsApp).",
+        "2.2 Provisional bookings are held for 48 hours only.",
+        "2.3 A non-refundable deposit of 50% of the hire fee secures the date.",
+        "2.4 The balance is due 7 days before the event.",
+        "2.5 Bookings made less than 7 days before the event must be paid in full at booking."]],
+      ["3. Cancellations & Refunds", [
+        "3.1 Cancellations must be made in writing.",
+        "3.2 The 50% deposit is non-refundable. Refunds of any balance already paid are as follows:",
+        {table: [["Notice given before the event", "Refund of balance paid"], ["More than 7 days", "100%"], ["3 to 7 days", "50%"], ["Less than 3 days", "None"]]},
+        "3.3 The client may move the event to another available date once, within 3 months, at no charge, if requested at least 7 days before the event.",
+        "3.4 If Base Bush Lounge cancels, the client receives a full refund of everything paid, or a new date of their choice.",
+        "3.5 Severe weather, natural disasters, pandemics and other force majeure events will be reviewed case by case. A new date will be offered first."]],
+      ["4. Venue Use, Hours & Capacity", [
+        "4.1 Use of the venue is limited to the agreed date, time and area.",
+        "4.2 The hire period includes setup and clean-up. Up to 1 hour of setup before the event is included.",
+        "4.3 The guest number confirmed 3 days before the event is final for catering and seating. The maximum of 50 guests may not be exceeded, in line with the Public Health Act and fire regulations."]],
+      ["5. Food & Drink", [
+        "5.1 All food is supplied by Base Bush Lounge. No outside food is allowed.",
+        "5.2 No outside alcohol is allowed without written consent. Where consent is given, corkage applies as follows:",
+        {table: [["Event size", "Corkage"], ["30 guests or fewer", "BWP 3,500 flat fee"], ["Over 30 guests", "BWP 100 per case (beer/cider)<br>BWP 150 per bottle of wine<br>BWP 250 per bottle of spirits"]]},
+        "5.3 A celebration cake brought by the client is allowed free of charge.",
+        "5.4 All alcohol service complies with the Liquor Act. Alcohol will not be served to anyone under 18."]],
+      ["6. Music & Noise", [
+        "6.1 Background music through the Lounge's sound system, or a small speaker, is included.",
+        "6.2 A DJ or live band needs written approval and may carry an extra charge.",
+        "6.3 The Lounge may control volume and content in line with public decency laws."]],
+      ["7. Decor & Setup", [
+        "7.1 Decor plans must be approved by the Lounge in advance.",
+        "7.2 Nails, staples, tacks, pins and permanent fixtures are not allowed anywhere on the property.",
+        "7.3 Confetti, glitter, open flames and sky lanterns are not allowed without written approval.",
+        "7.4 The client removes their own decor at the end of the event, unless other arrangements have been made."]],
+      ["8. Client Responsibilities", [
+        "8.1 The client is responsible for:",
+        {bullets: ["the behaviour of their guests and any vendors they bring", "loss of or damage to Lounge property during the hire", "supervising children at all times"]},
+        "8.2 Smoking is allowed only in designated areas.",
+        "8.3 Outside vendors (cake, decor, photographers) must be named on the booking form and arrive within the hire period."]],
+      ["9. Liability", [
+        "9.1 Base Bush Lounge is not liable for injury, loss or damage during the event, except where caused by the negligence of the Lounge or its staff.",
+        "9.2 The Lounge is not responsible for guests' personal belongings or items left behind.",
+        "9.3 The client indemnifies the Lounge against claims arising from the conduct of their guests or vendors."]],
+      ["10. Compliance", [
+        "10.1 All events must comply with Botswana law, including the Liquor Act, the Public Health Act and the Consumer Protection Act.",
+        "10.2 The Lounge may stop an event without refund for a serious breach, such as a safety risk, unlawful conduct or exceeding capacity."]],
+      ["11. Amendments", ["These Terms may be updated from time to time. Clients will be told in writing of any change before their event."]],
+      ["12. Contact Details", ["Base Bush Lounge, Mokolodi, South East District, Botswana<br>Email: base@basebushlounge.co.bw<br>Mobile: +267 77410686"]],
+    ]},
+    large: { title: "TERMS AND CONDITIONS FOR LARGE EVENTS 2026", label: "Large events (more than 50 guests)", sections: [
+      ["1. Scope", [
+        "1.1 These Terms apply to events at Base Bush Lounge of more than 50 guests. Examples are weddings, corporate functions, conferences, parties and launches.",
+        "1.2 Events of 50 guests or fewer fall under the Terms and Conditions for Small Events 2026.",
+        "1.3 By signing the booking form or paying a deposit, the client accepts these Terms."]],
+      ["2. Booking, Payment & Deposits", [
+        "2.1 All bookings must be confirmed in writing (email or WhatsApp).",
+        "2.2 Provisional bookings are held for 48 hours only.",
+        "2.3 A non-refundable deposit of 50% of the hire fee secures the date.",
+        "2.4 The balance is due 14 days before the event.",
+        "2.5 Bookings made less than 14 days before the event must be paid in full at booking."]],
+      ["3. Cancellations & Refunds", [
+        "3.1 Cancellations must be made in writing.",
+        "3.2 The 50% deposit is non-refundable. Refunds of any balance already paid are as follows:",
+        {table: [["Notice given before the event", "Refund of balance paid"], ["More than 30 days", "100%"], ["14 to 30 days", "50%"], ["Less than 14 days", "None"]]},
+        "3.3 The client may move the event to another available date once, within 6 months, at no charge, if requested at least 30 days before the event.",
+        "3.4 If Base Bush Lounge cancels, the client receives a full refund of everything paid, or a new date of their choice.",
+        "3.5 Severe weather, natural disasters, pandemics and other force majeure events will be reviewed case by case. A new date will be offered first."]],
+      ["4. Venue Use, Hours & Capacity", [
+        "4.1 Use of the venue is limited to the agreed date, time and area.",
+        "4.2 The hire period includes setup and takedown. All setup and breakdown must be coordinated with Lounge staff.",
+        "4.3 The guest number confirmed 7 days before the event is final for catering and seating. Maximum venue capacity may not be exceeded, in line with the Public Health Act and fire regulations.",
+        "4.4 The property is monitored by CCTV camera surveillance to protect guests and their belongings."]],
+      ["5. Food & Drink", [
+        "5.1 All food is supplied by Base Bush Lounge. No outside food is allowed.",
+        "5.2 No outside alcohol is allowed without written consent. Where consent is given, corkage applies as follows:",
+        {table: [["Item", "Corkage"], ["Case (beer/cider)", "BWP 100 per case"], ["Wine", "BWP 150 per bottle"], ["Spirits", "BWP 250 per bottle"]]},
+        "5.3 All alcohol service complies with the Liquor Act. Alcohol will not be served to anyone under 18."]],
+      ["6. Music & Entertainment", [
+        "6.1 DJs, live bands and sound equipment are allowed with prior approval from the Lounge.",
+        "6.2 Noise levels must comply with local authority guidelines. Music must end by midnight unless otherwise agreed in writing.",
+        "6.3 The Lounge may control volume and content in line with public decency laws.",
+        "6.4 The client is responsible for any copyright or performing rights licences needed for music or entertainment."]],
+      ["7. Decor & Setup", [
+        "7.1 Decor plans and materials must receive written approval from the Lounge in advance.",
+        "7.2 Nails, staples, tacks, pins and permanent fixtures are not allowed on walls, ceilings, floors or any other part of the property.",
+        "7.3 Confetti, glitter, open flames and sky lanterns are not allowed without written approval.",
+        "7.4 The client removes all decor and leaves the premises as found straight after the event, unless other arrangements have been made."]],
+      ["8. Outside Vendors", [
+        "8.1 All outside vendors (decor, DJs, photographers, sound and lighting) must be approved by the Lounge and named on the booking form at least 7 days before the event.",
+        "8.2 Vendors must arrive and leave within the hire period and follow the Lounge's safety rules."]],
+      ["9. Security & Safety", [
+        "9.1 The Lounge may require additional security depending on the size and nature of the event, at the client's cost. The client will be told in writing at least 14 days before the event.",
+        "9.2 All fire exits and emergency procedures must be observed at all times."]],
+      ["10. Client Responsibilities", [
+        "10.1 The client is responsible for:",
+        {bullets: ["the behaviour of their guests and any vendors they bring", "loss of or damage to Lounge property during the hire, including damage caused by decorations", "supervising children at all times"]},
+        "10.2 Smoking is allowed only in designated areas."]],
+      ["11. Liability", [
+        "11.1 Base Bush Lounge is not liable for injury, loss or damage during the event, except where caused by the negligence of the Lounge or its staff.",
+        "11.2 The Lounge is not liable for delays or disruptions caused by circumstances beyond its control.",
+        "11.3 The Lounge is not responsible for guests' personal belongings or items left behind.",
+        "11.4 The client indemnifies the Lounge against claims arising from the conduct of their guests or vendors."]],
+      ["12. Compliance", [
+        "12.1 All events must comply with Botswana law, including the Liquor Act, the Public Health Act, the Consumer Protection Act, and copyright and performing rights where applicable.",
+        "12.2 The Lounge may stop an event without refund for a serious breach, such as a safety risk, unlawful conduct or exceeding capacity."]],
+      ["13. Amendments", ["These Terms may be updated from time to time. Clients will be told in writing of any change before their event."]],
+      ["14. Contact Details", ["Base Bush Lounge, Mokolodi, South East District, Botswana<br>Email: base@basebushlounge.co.bw<br>Mobile: +267 77410686"]],
+    ]},
+  };
+  // Guest count = the highest number in "No. of guests" (e.g. "20 – 23" → 23). 50 or fewer → small events; more → large.
+  const quoteGuests = q => { const n = String(q?.guests_text||"").match(/\d+/g); return n ? Math.max(...n.map(Number)) : null; };
+  const contractKind = q => { const g = quoteGuests(q); return g==null ? null : (g <= 50 ? "small" : "large"); };
+  let docContractId = null;
+
+  function showContract(id, quiet){
+    const q = quotes.find(x=>x.id===id); if(!q) return;
+    if(q.status!=="confirmed"){ toast("Contracts are available once the quote is confirmed."); return; }
+    const kind = contractKind(q);
+    if(!kind){ toast("Add the number of guests to the quote first, so the right contract (small or large events) can be chosen."); openQuote(q); $("q-guests").focus(); return; }
+    docContractId = id;
+    $("qListView").hidden = true; $("qEditView").hidden = true; $("qDocView").hidden = true; $("cDocView").hidden = false;
+    const C = CONTRACTS[kind], c = qClient(q), g = quoteGuests(q), b = bookings.find(x=>x.id===q.booking_id);
+    const inv = invoices.find(i=>i.quote_id===q.id && i.status==="current");
+    const total = inv ? Number(inv.total) : Number(q.total);
+    const clientName = c.company && c.name && c.company!==c.name ? `${c.company} (${c.name})` : (c.company || c.name || "");
+    const item = it => typeof it === "string" ? `<p>${it}</p>`
+      : it.table ? `<table class="ctab"><thead><tr>${it.table[0].map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${it.table.slice(1).map(r=>`<tr>${r.map(d=>`<td>${d}</td>`).join("")}</tr>`).join("")}</tbody></table>`
+      : `<ul>${it.bullets.map(x=>`<li>${x}</li>`).join("")}</ul>`;
+    $("cdoc").innerHTML = `
+      <div class="qtop"><img src="logo.png" alt="Base Bush Lounge">
+        <div class="qno"><h2>${C.title}</h2><div><b>BOOKING REF: ${esc(q.quote_no)}</b></div>${inv?`<div>INVOICE: ${esc(inv.invoice_no)}</div>`:""}<div>DATE: ${iso(new Date()).replace(/-/g,"/")}</div></div></div>
+      <table class="evt" style="margin-top:18px"><thead><tr><th>Client</th><th>Event</th><th>Event date</th><th>Area</th><th class="c">Guests</th></tr></thead>
+        <tbody><tr><td>${esc(clientName)}${q.end_client?`<br>For ${esc(q.end_client)}`:""}</td><td>${esc(q.event_type)}</td><td>${esc(qDates(q))}</td>
+        <td>Base Bush Lounge - ${esc(areaName(q.area))}</td><td class="c">${esc(q.guests_text||String(g))}</td></tr></tbody></table>
+      <table class="evt"><thead><tr><th>Hire fee (total)</th><th>50% deposit to secure the date</th><th>Balance</th><th>Balance due</th></tr></thead>
+        <tbody><tr><td>P${qm(total)}</td><td>P${qm(total/2)}</td><td>P${qm(total/2)}</td><td>${kind==="small"?"7":"14"} days before the event</td></tr></tbody></table>
+      <div class="cterms">${C.sections.map(([h, items])=>`<section><h4>${h}</h4>${items.map(item).join("")}</section>`).join("")}</div>
+      <div class="caccept"><h4>Acceptance</h4><p>By signing below, the client confirms they have read, understood and accepted these Terms and Conditions.</p>
+        <table class="csign"><thead><tr><th></th><th>Client</th><th>Base Bush Lounge</th></tr></thead><tbody>
+          <tr><td>Name</td><td>${esc(c.name || clientName)}</td><td></td></tr>
+          <tr><td>Signature</td><td></td><td></td></tr>
+          <tr><td>Date</td><td></td><td></td></tr>
+          <tr><td>Event date</td><td>${esc(qDates(q))}</td><td>${esc(qDates(q))}</td></tr>
+          <tr><td>Booking ref</td><td>${esc(q.quote_no)}</td><td>${esc(q.quote_no)}</td></tr>
+        </tbody></table></div>
+      ${DOC_FOOT}`;
+    $("cdNote").innerHTML = `<span class="pill confirmed">${esc(C.label)}</span> ${g} guest${g===1?"":"s"} on quote ${esc(q.quote_no)}, so this is the ${kind==="small"?"Small":"Large"} Events contract. ${kind==="small"?"Over 50 guests":"50 guests or fewer"} would use the ${kind==="small"?"Large":"Small"} Events contract instead.`;
+    document.title = `Contract ${q.quote_no} · Base Bush Lounge`;
+    if(!quiet) window.scrollTo(0,0);
+  }
+  $("cdBack").onclick = ()=>{ if(docContractId){ const id = docContractId; docContractId = null; $("cDocView").hidden = true; showDoc(id); } else showQList(); };
+  $("cdPrint").onclick = ()=>window.print();
+  $("qdContract").onclick = ()=>{ if(docQuoteId) showContract(docQuoteId); };
 
   // ================= INVOICES =================
   let iTab = "all", docInvId = null, iItems = [], iAmendingId = null;
