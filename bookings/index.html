@@ -403,6 +403,15 @@ input:disabled{opacity:.7}
   .stickybar .spacer,.stickybar > span[style*="flex:1"]{display:none}
   .stickybar .meta{width:100%;order:-1}
 }
+/* Line-item picker: full price list under the description box */
+.ipick{position:fixed;z-index:60;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 32px -12px rgba(0,0,0,.35);max-height:300px;overflow-y:auto;padding:4px 0;min-width:260px}
+.ipick .cat{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--c,var(--leaf));font-weight:600;padding:8px 12px 2px}
+.ipick button{display:flex;justify-content:space-between;gap:12px;width:100%;border:0;border-radius:0;background:transparent;padding:8px 12px;text-align:left;min-height:0;color:var(--ink)}
+.ipick button:hover,.ipick button.on{background:var(--ct,var(--leaf-tint))}
+.ipick button .pp{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ipick button.cur{font-weight:600}
+.ipick .none{padding:10px 12px;color:var(--muted);font-size:12.5px}
+.irow .d{cursor:text;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:30px}
 </style>
 </head>
 <body>
@@ -813,7 +822,7 @@ input:disabled{opacity:.7}
           <div class="itemtools">
             <select id="q-addprice" aria-label="Add a line item"></select>
           </div>
-          <p class="hint">Pick from the price list to fill the price in for you, or choose “Blank line” to type your own description and price.</p>
+          <p class="hint">Click any description to swap it for another item on the price list (the price updates too), or type your own. Use “+ Add line item” for a new line.</p>
           <datalist id="priceOptions"></datalist>
           <div class="row" style="margin-top:14px;align-items:start">
             <label>VAT %<input type="number" id="q-vatrate" min="0" max="100" step="0.5" inputmode="decimal" style="max-width:120px"></label>
@@ -1467,6 +1476,65 @@ input:disabled{opacity:.7}
   window.addEventListener("hashchange", ()=>{ route(); window.scrollTo(0,0); });
   const go = v => { if(location.hash!=="#"+v) location.hash = v; else route(); };
 
+  // ================= LINE-ITEM PICKER =================
+  // Clicking a description opens the whole price list (grouped). Picking an item replaces that line's
+  // description and price. Typing filters the list; anything typed that isn't picked stays as custom text.
+  const pickEl = document.createElement("div"); pickEl.className = "ipick"; pickEl.hidden = true; pickEl.setAttribute("role","listbox"); document.body.appendChild(pickEl);
+  let pickCtx = null, pickOn = -1;
+  function pickOpen(input, onPick){
+    const row = input.closest("[data-i],[data-ii]"); if(!row) return;
+    pickCtx = {input, onPick, idx: +(row.dataset.i ?? row.dataset.ii)};
+    pickRender(); pickPlace();
+  }
+  function pickRender(){
+    if(!pickCtx) return;
+    const v = pickCtx.input.value.trim().toLowerCase();
+    const act = prices.filter(p=>p.active);
+    const exact = act.some(p=>p.description.toLowerCase()===v);
+    const list = !v || exact ? act : act.filter(p=>(p.description+" "+p.category).toLowerCase().includes(v));
+    pickOn = -1;
+    const cats = [...new Set(list.map(p=>p.category))];
+    pickEl.innerHTML = list.length ? cats.map(c=>`<div class="cat">${esc(c)}</div>` + list.filter(p=>p.category===c).map(p=>
+      `<button type="button" role="option" data-pid="${esc(p.id)}" class="${p.description.toLowerCase()===v?"cur":""}"><span>${esc(p.description)}</span><span class="pp">P ${qm(p.unit_price)}</span></button>`).join("")).join("")
+      : `<div class="none">Not on the price list. Keep typing to use your own description, then enter the price.</div>`;
+    pickEl.hidden = false;
+    // keep the theme colour of the page it opened from
+    const sec = pickCtx.input.closest("#quotesView,#invoicesView"); pickEl.style.cssText = sec ? `--c:${getComputedStyle(sec).getPropertyValue("--c")};--ct:${getComputedStyle(sec).getPropertyValue("--ct")}` : "";
+    pickPlace();
+  }
+  function pickPlace(){
+    if(!pickCtx || pickEl.hidden) return;
+    const r = pickCtx.input.getBoundingClientRect(), below = innerHeight - r.bottom, h = Math.min(300, pickEl.scrollHeight);
+    pickEl.style.left = Math.max(8, Math.min(r.left, innerWidth - Math.max(r.width,260) - 8)) + "px";
+    pickEl.style.width = Math.max(r.width, 260) + "px";
+    pickEl.style.top = (below < h + 12 && r.top > below ? r.top - h - 6 : r.bottom + 6) + "px";
+  }
+  function pickClose(){ pickEl.hidden = true; pickCtx = null; }
+  function pickChoose(pid){
+    const p = prices.find(x=>x.id===pid); if(!p || !pickCtx) return;
+    const {onPick, idx} = pickCtx; pickClose(); onPick(idx, p);
+  }
+  pickEl.addEventListener("mousedown", e=>e.preventDefault()); // keep focus in the input
+  pickEl.addEventListener("click", e=>{ const b = e.target.closest("[data-pid]"); if(b) pickChoose(b.dataset.pid); });
+  window.addEventListener("resize", pickPlace); window.addEventListener("scroll", pickPlace, true);
+  function wirePicker(box, onPick){
+    box.addEventListener("focusin", e=>{ if(e.target.matches(".d")) pickOpen(e.target, onPick); });
+    box.addEventListener("click", e=>{ if(e.target.matches(".d") && pickEl.hidden) pickOpen(e.target, onPick); });
+    box.addEventListener("input", e=>{ if(e.target.matches(".d") && pickCtx && pickCtx.input===e.target) pickRender(); });
+    box.addEventListener("focusout", e=>{ if(e.target.matches(".d")) setTimeout(()=>{ if(pickCtx && document.activeElement!==pickCtx.input) pickClose(); }, 120); });
+    box.addEventListener("keydown", e=>{
+      if(!e.target.matches(".d") || pickEl.hidden) return;
+      const opts = [...pickEl.querySelectorAll("[data-pid]")];
+      if(e.key==="ArrowDown" || e.key==="ArrowUp"){ e.preventDefault(); if(!opts.length) return;
+        pickOn = (pickOn + (e.key==="ArrowDown"?1:-1) + opts.length) % opts.length;
+        opts.forEach((o,i)=>o.classList.toggle("on", i===pickOn)); opts[pickOn].scrollIntoView({block:"nearest"}); }
+      else if(e.key==="Enter" && pickOn>=0){ e.preventDefault(); pickChoose(opts[pickOn].dataset.pid); }
+      else if(e.key==="Escape"){ pickClose(); }
+    });
+  }
+  const perHeadQty = (p, guestsText, curQty) => /per person|buffet|lunch|dinner|breakfast/i.test(p.description)
+    ? (parseInt((String(guestsText||"").match(/(\d+)\D*$/)||[])[1]) || curQty || 1) : (curQty || 1);
+
   // ================= QUOTES =================
   const QSTAT = {draft:"Draft", sent:"Sent", confirmed:"Confirmed", declined:"Declined"};
   const Q2B = {draft:"inquired", sent:"quoted", confirmed:"confirmed", declined:"cancelled"};
@@ -1570,7 +1638,7 @@ input:disabled{opacity:.7}
     $("qItems").innerHTML = `<div class="irow head"><span>Qty</span><span>Description</span><span>Unit price (P)</span><span style="text-align:right">Amount</span><span></span></div>` +
       (qItems.length ? qItems.map((it,i)=>`<div class="irow" data-i="${i}">
         <input class="q" type="number" min="0" step="1" inputmode="decimal" value="${it.qty}" data-f="qty" aria-label="Quantity">
-        <input class="d" value="${esc(it.description)}" data-f="description" list="priceOptions" placeholder="Description" aria-label="Description">
+        <input class="d" value="${esc(it.description)}" data-f="description" autocomplete="off" placeholder="Type, or pick from the price list" aria-haspopup="listbox" aria-label="Description">
         <input class="pr money" type="number" min="0" step="0.01" inputmode="decimal" value="${it.unit_price}" data-f="unit_price" aria-label="Unit price">
         <span class="amt" data-amt="${i}">${qm(it.qty*it.unit_price)}</span>
         <button type="button" class="ghost rm" data-rm="${i}" aria-label="Remove line">✕</button></div>`).join("")
@@ -1591,6 +1659,10 @@ input:disabled{opacity:.7}
     row.querySelector(".amt").textContent = qm(qItems[i].qty*qItems[i].unit_price); qTotals();
   });
   $("qItems").addEventListener("click", e=>{ const b=e.target.closest("[data-rm]"); if(!b) return; qItems.splice(+b.dataset.rm,1); renderItems(); });
+  wirePicker($("qItems"), (i, p)=>{
+    qItems[i] = {qty: perHeadQty(p, $("q-guests").value, qItems[i]?.qty), description:p.description, unit_price:Number(p.unit_price)};
+    renderItems(); $("qItems").querySelector(`[data-i="${i}"] .pr`)?.focus();
+  });
   $("q-addprice").addEventListener("change", ()=>{
     const val = $("q-addprice").value; $("q-addprice").value="";
     if(val==="__blank"){ qItems.push({qty:1, description:"", unit_price:0}); renderItems();
@@ -2032,7 +2104,7 @@ input:disabled{opacity:.7}
     $("iItems").innerHTML = `<div class="irow head"><span>Qty</span><span>Description</span><span>Unit price (P)</span><span style="text-align:right">Amount</span><span></span></div>` +
       (iItems.length ? iItems.map((it,i)=>`<div class="irow" data-ii="${i}">
         <input class="q" type="number" min="0" step="1" inputmode="decimal" value="${it.qty}" data-f="qty" aria-label="Quantity">
-        <input class="d" value="${esc(it.description)}" data-f="description" list="priceOptions" placeholder="Description" aria-label="Description">
+        <input class="d" value="${esc(it.description)}" data-f="description" autocomplete="off" placeholder="Type, or pick from the price list" aria-haspopup="listbox" aria-label="Description">
         <input class="pr money" type="number" min="0" step="0.01" inputmode="decimal" value="${it.unit_price}" data-f="unit_price" aria-label="Unit price">
         <span class="amt">${qm(it.qty*it.unit_price)}</span>
         <button type="button" class="ghost rm" data-irm="${i}" aria-label="Remove line">✕</button></div>`).join("")
@@ -2055,6 +2127,11 @@ input:disabled{opacity:.7}
     row.querySelector(".amt").textContent = qm(iItems[i].qty*iItems[i].unit_price); iTotals();
   });
   $("iItems").addEventListener("click", e=>{ const b=e.target.closest("[data-irm]"); if(!b) return; iItems.splice(+b.dataset.irm,1); renderIItems(); });
+  wirePicker($("iItems"), (i, p)=>{
+    const q = invQuote(invoices.find(x=>x.id===iAmendingId)||{});
+    iItems[i] = {qty: perHeadQty(p, q.guests_text, iItems[i]?.qty), description:p.description, unit_price:Number(p.unit_price)};
+    renderIItems(); $("iItems").querySelector(`[data-ii="${i}"] .pr`)?.focus();
+  });
   $("i-addprice").addEventListener("change", ()=>{
     const val = $("i-addprice").value; $("i-addprice").value="";
     if(val==="__blank"){ iItems.push({qty:1, description:"", unit_price:0}); renderIItems();
