@@ -225,6 +225,14 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
             <label>Physical / postal address<input id="f-address" autocomplete="off" placeholder="Optional"></label>
           </fieldset>
           <fieldset>
+            <legend>Contact person</legend>
+            <label>Name<input id="f-cname" autocomplete="off" placeholder="Who we deal with on the day, if different"></label>
+            <div class="row">
+              <label>Number<input id="f-cphone" type="tel" inputmode="tel" placeholder="+267 7x xxx xxx"></label>
+              <label>Email<input id="f-cemail" type="email" inputmode="email" autocomplete="off" placeholder="name@example.com"></label>
+            </div>
+          </fieldset>
+          <fieldset>
             <legend>Booking</legend>
             <label>Event type
               <select id="f-type">
@@ -434,7 +442,7 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
   function readForm(){
     const v = id => $(id).value.trim();
     return { id: editingId || undefined,
-      client:v("f-client"), company:v("f-company"), phone:v("f-phone"), email:v("f-email"), idno:v("f-idno"), address:v("f-address"), source:$("f-source").value,
+      client:v("f-client"), company:v("f-company"), phone:v("f-phone"), email:v("f-email"), idno:v("f-idno"), address:v("f-address"), source:$("f-source").value, cname:v("f-cname"), cphone:v("f-cphone"), cemail:v("f-cemail"),
       type:$("f-type").value, area:$("f-area").value, session:$("f-session").value,
       start:$("f-start").value, end:$("f-end").value || $("f-start").value,
       guests:$("f-guests").value ? Number($("f-guests").value) : null, status:$("f-status").value,
@@ -445,6 +453,7 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
     clientId = c?.id || null;
     $("f-client").value = c?.name||""; $("f-company").value = c?.company||""; $("f-phone").value = c?.phone||"";
     $("f-email").value = c?.email||""; $("f-idno").value = c?.id_number||""; $("f-address").value = c?.address||""; $("f-source").value = c?.source||"";
+    $("f-cname").value = c?.contact_name||""; $("f-cphone").value = c?.contact_phone||""; $("f-cemail").value = c?.contact_email||"";
     clientHint();
   }
   function clientHint(){
@@ -508,7 +517,7 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
     if(!c.start){ $("f-start").focus(); return; }
     $("saveBtn").disabled = true; $("saveBtn").textContent = "Saving…";
     try{
-      const clientRow = {name:c.client, company:c.company||null, phone:c.phone||null, email:c.email||null, id_number:c.idno||null, address:c.address||null, source:c.source||null};
+      const clientRow = {name:c.client, company:c.company||null, phone:c.phone||null, email:c.email||null, id_number:c.idno||null, address:c.address||null, source:c.source||null, contact_name:c.cname||null, contact_phone:c.cphone||null, contact_email:c.cemail||null};
       let cid = clientId;
       if(cid){ const r = await sb.from("clients").update(clientRow).eq("id", cid); if(r.error) throw r.error; }
       else { const r = await sb.from("clients").insert(clientRow).select("id").single(); if(r.error) throw r.error; cid = r.data.id; }
