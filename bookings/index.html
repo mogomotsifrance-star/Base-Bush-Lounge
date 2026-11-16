@@ -503,7 +503,13 @@ input:disabled{opacity:.7}
           <button type="button" id="vQuote">Create quote</button>
           <button type="button" id="vInvoice" hidden>View invoice</button>
           <span class="spacer"></span>
+          <button type="button" class="danger" id="vDel">Delete</button>
           <button type="button" id="vClose2">Close</button>
+        </div>
+        <div class="confirmbox clash" id="vDelConfirm" hidden style="margin-top:10px">
+          <span id="vDelText">Delete this booking permanently?</span>
+          <button type="button" class="danger" id="vDelYes">Yes, delete permanently</button>
+          <button type="button" id="vDelNo">Keep it</button>
         </div>
       </section>
 
@@ -582,7 +588,7 @@ input:disabled{opacity:.7}
             <button type="button" class="danger" id="delBtn" hidden>Delete</button>
           </div>
           <div class="confirmbox" id="delConfirm" hidden>
-            <span>Delete this booking permanently? Marking it Cancelled keeps the record.</span>
+            <span id="delText">Delete this booking permanently? Marking it Cancelled keeps the record.</span>
             <button type="button" class="danger" id="delYes">Yes, delete</button>
             <button type="button" id="delNo">Keep it</button>
           </div>
@@ -979,7 +985,7 @@ input:disabled{opacity:.7}
       return `<div class="cl"><div style="min-width:0"><strong>${esc(c.name)}</strong>
         <div class="meta">${[c.company,c.phone,c.email].filter(Boolean).map(esc).join(" · ")||"No contact details"}</div>
         <div class="meta">${bs.length} booking${bs.length===1?"":"s"}${last?" · latest "+nice(last,{day:"numeric",month:"short",year:"numeric"}):""}</div></div>
-        <button type="button" data-client="${esc(c.id)}">Book again</button></div>`;
+        <span style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end"><button type="button" data-client="${esc(c.id)}">Book again</button>${isAdmin && !bs.length && !quotes.some(q=>q.client_id===c.id) && !invoices.some(i=>i.client_id===c.id) ? `<button type="button" class="ghost" data-rmclient="${esc(c.id)}">Remove</button>` : ""}</span></div>`;
     }).join("") : `<div class="empty">${q?"No client matches that search.":"Clients appear here once you save their first booking."}</div>`;
   }
   function renderStaff(){
@@ -1057,7 +1063,7 @@ input:disabled{opacity:.7}
     $("f-start").value = b?.start||selected; $("f-end").value = b?.end||selected;
     $("f-guests").value = b?.guests??""; $("f-status").value = b?.status||"inquired";
     $("f-total").value = b?.total||""; $("f-deposit").value = b?.deposit||""; $("f-notes").value = b?.notes||"";
-    $("delBtn").hidden = !b || !!b?.quoteId; $("delConfirm").hidden = true;
+    $("delBtn").hidden = !b || (!!b?.quoteId && !isAdmin); $("delConfirm").hidden = true;
     const ql = $("quoteLink"); ql.hidden = !b?.quoteId;
     $("f-total").disabled = !!b?.quoteId;
     $("mkQuoteBtn").textContent = b?.quoteId ? `Open quote ${b.quoteNo}` : "Create quote";
@@ -1094,6 +1100,8 @@ input:disabled{opacity:.7}
       </div>${total && b.status!=="cancelled" && b.deposit < total/2 ? `<p class="hint warn" style="margin:4px 0 0">50% deposit is ${pula(total/2)}; ${pula(total/2-b.deposit)} still to collect.</p>` : ""}</div>
       ${b.notes ? `<div class="vsec"><h4>Notes</h4><p class="vnotes">${esc(b.notes)}</p></div>` : ""}`;
     $("vQuote").textContent = b.quoteId ? `Open quote ${b.quoteNo}` : "Create quote";
+    if(!quiet) $("vDelConfirm").hidden = true;
+    $("vDel").hidden = (!!b.quoteId || !!inv) && !isAdmin;
     $("vInvoice").hidden = !inv; if(inv) $("vInvoice").textContent = `View invoice ${inv.invoice_no}`;
     $("viewPanel").hidden = false;
     if(quiet) return;
@@ -1196,14 +1204,24 @@ input:disabled{opacity:.7}
   };
 
   $("cancelForm").onclick = closeForm; $("closeTop").onclick = closeForm;
-  $("delBtn").onclick = ()=>{ $("delConfirm").hidden=false; };
+  // What a delete removes, in words the confirm box can show
+  function deleteText(b){
+    const qs = quotes.filter(q=>q.booking_id===b.id), qids = qs.map(q=>q.id);
+    const invNos = [...new Set(invoices.filter(i=>i.booking_id===b.id || qids.includes(i.quote_id)).map(i=>i.invoice_no))];
+    const extra = [qs.length ? `quote ${qs.map(q=>q.quote_no).join(", ")}` : "", invNos.length ? `invoice ${invNos.join(", ")} (all revisions)` : ""].filter(Boolean);
+    return `Permanently delete ${b.client}'s booking on ${short(b.start)}${extra.length ? `, together with ${extra.join(" and ")}` : ""}? This can't be undone. Marking it Cancelled keeps the record instead.`;
+  }
+  async function deleteBooking(id){
+    const r = await sb.rpc("delete_booking", {p_booking:id});
+    if(r.error){ toast("Couldn't delete: " + r.error.message); return false; }
+    toast("Booking deleted"); closeForm(); closeView(); await loadAll(); return true;
+  }
+  $("delBtn").onclick = ()=>{ const b = bookings.find(x=>x.id===editingId); if(b) $("delText").textContent = deleteText(b); $("delConfirm").hidden=false; };
   $("delNo").onclick = ()=>{ $("delConfirm").hidden=true; };
-  $("delYes").onclick = async ()=>{
-    if(!editingId) return;
-    const r = await sb.from("bookings").delete().eq("id", editingId);
-    if(r.error){ toast("Couldn't delete: "+r.error.message); return; }
-    toast("Booking deleted"); closeForm(); loadAll();
-  };
+  $("delYes").onclick = ()=>{ if(editingId) deleteBooking(editingId); };
+  $("vDel").onclick = ()=>{ const b = bookings.find(x=>x.id===viewId); if(!b) return; $("vDelText").textContent = deleteText(b); $("vDelConfirm").hidden=false; };
+  $("vDelNo").onclick = ()=>{ $("vDelConfirm").hidden=true; };
+  $("vDelYes").onclick = ()=>{ if(viewId) deleteBooking(viewId); };
   $("newBtn").onclick = ()=>openForm(null);
   $("clientSearch").addEventListener("input", renderClients);
 
@@ -1215,6 +1233,10 @@ input:disabled{opacity:.7}
     if(ed){ const b = bookings.find(x=>x.id===ed.dataset.edit); if(b){ selected=b.start; const d=parse(b.start); view=new Date(d.getFullYear(),d.getMonth(),1); render(); openForm(b); } return; }
     const again = e.target.closest("[data-client]");
     if(again){ const c = clientById(again.dataset.client); if(c){ fillClient(c); openForm(null, c); } return; }
+    const rc = e.target.closest("[data-rmclient]");
+    if(rc){ if(!rc.dataset.armed){ rc.dataset.armed="1"; rc.textContent="Tap to confirm"; rc.classList.add("danger"); return; }
+      const r = await sb.from("clients").delete().eq("id", rc.dataset.rmclient);
+      if(r.error) toast("Couldn't remove: "+r.error.message); else { toast("Client removed"); loadAll(); } return; }
     const rm = e.target.closest("[data-rmstaff]");
     if(rm){ if(rm.dataset.armed){ const r = await sb.from("staff").delete().eq("email", rm.dataset.rmstaff); if(r.error) toast("Couldn't remove: "+r.error.message); else { toast("Removed"); loadStaff(); } }
       else { rm.dataset.armed="1"; rm.textContent="Tap to confirm"; rm.classList.add("danger"); } return; }
