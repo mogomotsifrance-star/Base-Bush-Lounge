@@ -371,6 +371,8 @@ input:disabled{opacity:.7}
 .copyrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .copyrow input{flex:1 1 220px;font-size:12px;font-family:ui-monospace,Menlo,Consolas,monospace}
 .steps{margin:6px 0 0;padding-left:18px;display:grid;gap:4px;font-size:12.5px;color:var(--muted)}
+.btnlink{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:8px;padding:7px 12px;color:var(--ink);text-decoration:none;background:var(--surface)}
+.btnlink:hover{border-color:var(--muted)}
 </style>
 </head>
 <body>
@@ -534,6 +536,8 @@ input:disabled{opacity:.7}
           <button type="button" class="primary" id="vEdit">Edit booking</button>
           <button type="button" id="vQuote">Create quote</button>
           <button type="button" id="vInvoice" hidden>View invoice</button>
+          <button type="button" class="primary" id="vAccept" hidden>Accepted on Airbnb</button>
+          <a class="btnlink" id="vAirbnb" href="#" target="_blank" rel="noopener" hidden>Open in Airbnb ↗</a>
           <span class="spacer"></span>
           <button type="button" class="danger" id="vDel">Delete</button>
           <button type="button" id="vClose2">Close</button>
@@ -904,6 +908,8 @@ input:disabled{opacity:.7}
   const SESS = {full:"Full day", day:"Daytime", evening:"Evening"};
   const STAT = {inquired:"Inquired", quoted:"Quoted", confirmed:"Confirmed", cancelled:"Cancelled"};
   const HOLDS = st => st==="quoted" || st==="confirmed";
+  // Airbnb's calendar can't say whether a stay is still a request, so Airbnb stays are "held" until staff mark them accepted.
+  const stLabel = b => b && b.source==="airbnb" ? ({quoted:"Airbnb · awaiting acceptance", confirmed:"Airbnb · accepted", cancelled:"Airbnb · cancelled"}[b.status] || STAT[b.status]) : STAT[b?.status];
   let listTab = "all";
   const $ = id => document.getElementById(id);
   const mobile = () => matchMedia("(max-width:860px)").matches;
@@ -1034,7 +1040,7 @@ input:disabled{opacity:.7}
     const depLine = b.total ? ` · deposit ${pula(b.deposit)} of ${pula(b.total/2)} due` : "";
     const range = b.start===b.end ? SESS[b.session] : `${short(b.start)} – ${short(b.end)}`;
     return `<button type="button" class="bk" data-id="${esc(b.id)}">
-      <div class="top"><strong>${esc(b.client)}${b.source==="airbnb"?' <span class="pill airbnb">Airbnb</span>':""}</strong><span class="pill ${b.status}">${STAT[b.status]}</span></div>
+      <div class="top"><strong>${esc(b.client)}${b.source==="airbnb"?' <span class="pill airbnb">Airbnb</span>':""}</strong><span class="pill ${b.status}">${stLabel(b)}</span></div>
       <div class="meta">${esc(b.type)} · ${esc(areaName(b.area))} · ${esc(range)}${b.guests?` · ${esc(b.guests)} guests`:""}</div>
       <div class="meta">${[b.company,b.phone,b.email].filter(Boolean).map(esc).join(" · ")}${depLine}</div></button>`;
   }
@@ -1050,7 +1056,7 @@ input:disabled{opacity:.7}
     $("upcoming").innerHTML = list.length ? list.map(b=>`<button type="button" class="up" data-id="${esc(b.id)}" data-d="${b.start}">
       <span class="d">${short(b.start)}<small>${nice(b.start,{weekday:"short"})}</small></span>
       <span style="min-width:0"><strong style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(b.client)}</strong><span class="meta">${esc(b.type)} · ${esc(areaName(b.area))}</span></span>
-      <span class="pill ${b.status}">${STAT[b.status]}</span></button>`).join("")
+      <span class="pill ${b.status}">${stLabel(b)}</span></button>`).join("")
       : `<div class="empty">No upcoming bookings yet. Your first one will show here.</div>`;
   }
   function renderClients(){
@@ -1089,11 +1095,11 @@ input:disabled{opacity:.7}
       <td style="min-width:160px"><strong>${esc(b.client)}</strong>${b.company?`<div class="sub2">${esc(b.company)}</div>`:""}<div class="sub2">${contact(b)}</div></td>
       <td>${esc(b.type)}</td><td>${esc(areaName(b.area))}</td>
       <td class="num">${b.guests??"—"}</td><td class="num">${b.total?pula(b.total):"—"}</td><td class="num">${b.deposit?pula(b.deposit):"—"}</td>
-      <td><span class="pill ${b.status}">${STAT[b.status]}</span>${b.quoteNo?`<div class="sub2">${esc(b.quoteNo)}</div>`:""}</td>
+      <td><span class="pill ${b.status}">${stLabel(b)}</span>${b.quoteNo?`<div class="sub2">${esc(b.quoteNo)}</div>`:""}</td>
       <td><button type="button" data-edit="${esc(b.id)}">Edit</button></td></tr>`).join("")
       : `<tr><td colspan="9">${empty}</td></tr>`;
     $("listCards").innerHTML = list.length ? list.map(b=>`<div class="bcard">
-      <div class="top"><strong>${esc(b.client)}${b.source==="airbnb"?' <span class="pill airbnb">Airbnb</span>':""}</strong><span class="pill ${b.status}">${STAT[b.status]}</span></div>
+      <div class="top"><strong>${esc(b.client)}${b.source==="airbnb"?' <span class="pill airbnb">Airbnb</span>':""}</strong><span class="pill ${b.status}">${stLabel(b)}</span></div>
       <div class="meta">${esc(dates(b))} · ${esc(b.area)}</div>
       <div class="meta">${esc(b.type)}${b.guests?` · ${b.guests} guests`:""}${b.total?` · quote ${pula(b.total)}`:""}${b.deposit?` · deposit ${pula(b.deposit)}`:""}</div>
       ${contact(b)?`<div class="meta">${contact(b)}</div>`:""}
@@ -1164,7 +1170,7 @@ input:disabled{opacity:.7}
     const row = (k,v) => v ? `<dt>${k}</dt><dd>${v}</dd>` : "";
     $("vTitle").textContent = b.client;
     $("vBody").innerHTML = `
-      <div><span class="pill ${b.status}">${STAT[b.status]}</span>${b.quoteNo?` <span class="meta">Quote ${esc(b.quoteNo)}</span>`:""}${inv?` <span class="meta">· Invoice ${esc(inv.invoice_no)}${inv.revision>1?` rev ${inv.revision}`:""}</span>`:""}</div>
+      <div><span class="pill ${b.status}">${stLabel(b)}</span>${b.quoteNo?` <span class="meta">Quote ${esc(b.quoteNo)}</span>`:""}${inv?` <span class="meta">· Invoice ${esc(inv.invoice_no)}${inv.revision>1?` rev ${inv.revision}`:""}</span>`:""}</div>
       <div class="vsec"><h4>Event</h4><dl class="vlist">
         ${row("Date", esc(dates))}${row("Session", esc(SESS[b.session]||""))}${row("Area", esc(areaName(b.area)))}${row("Event type", esc(b.type))}${row("Guests", b.guests!=null && b.guests!=="" ? esc(b.guests) : "")}
       </dl></div>
@@ -1182,7 +1188,13 @@ input:disabled{opacity:.7}
     $("vDel").hidden = (!!b.quoteId || !!inv) && !isAdmin;
     const abnb = b.source==="airbnb";
     $("vEdit").hidden = abnb; $("vQuote").hidden = abnb; if(abnb) $("vDel").hidden = true;
-    if(abnb) $("vBody").insertAdjacentHTML("afterbegin", `<p class="hint"><span class="pill airbnb">Airbnb</span> Imported from Airbnb. Change or cancel it in Airbnb; the calendar updates within 30 minutes.</p>`);
+    const resUrl = (b.notes.match(/Reservation URL:\s*(https:\/\/\S+)/)||[])[1] || "";
+    $("vAccept").hidden = !(abnb && b.status==="quoted");
+    $("vAccept").textContent = "Accepted on Airbnb";
+    $("vAirbnb").hidden = !(abnb && resUrl); if(resUrl) $("vAirbnb").href = resUrl;
+    if(abnb) $("vBody").insertAdjacentHTML("afterbegin", b.status==="quoted"
+      ? `<p class="hint warn"><span class="pill airbnb">Airbnb</span> Airbnb's calendar shows this stay as reserved, but it can't say whether it's still a request. The date is held. Once you accept it in Airbnb, press “Accepted on Airbnb”. If it's declined or expires, it disappears here within 30 minutes.</p>`
+      : `<p class="hint"><span class="pill airbnb">Airbnb</span> Accepted Airbnb stay. Change or cancel it in Airbnb; the calendar updates within 30 minutes.</p>`);
     $("vInvoice").hidden = !inv; if(inv) $("vInvoice").textContent = `View invoice ${inv.invoice_no}`;
     $("viewPanel").hidden = false;
     if(quiet) return;
@@ -1191,6 +1203,12 @@ input:disabled{opacity:.7}
   }
   function closeView(){ $("viewPanel").hidden = true; viewId = null; if($("formPanel").hidden) document.body.classList.remove("sheet"); }
   $("vClose").onclick = $("vClose2").onclick = closeView;
+  $("vAccept").onclick = async ()=>{
+    const b = bookings.find(x=>x.id===viewId); if(!b) return;
+    const r = await sb.from("bookings").update({status:"confirmed", notes:b.notes.replace(/^Airbnb stay \(held\)\. Mark it accepted once you accept it in Airbnb\./, "Airbnb stay (accepted).")}).eq("id", b.id);
+    if(r.error){ toast("Couldn't update: "+r.error.message); return; }
+    toast("Marked as accepted on Airbnb"); await loadAll();
+  };
   $("vEdit").onclick = ()=>{ const b = bookings.find(x=>x.id===viewId); if(b) openForm(b); };
   $("vQuote").onclick = ()=>{ const b = bookings.find(x=>x.id===viewId); if(!b) return;
     if(b.quoteId){ closeView(); go("quotes"); showDoc(b.quoteId); return; }
@@ -1222,7 +1240,7 @@ input:disabled{opacity:.7}
     const el=$("clash");
     if(!list.length){ el.hidden=true; $("saveBtn").disabled=false; return; }
     el.hidden=false; $("saveBtn").disabled=true;
-    el.innerHTML = `<b>Double booking.</b> This overlaps ${list.map(b=>`${esc(b.client)} (${esc(areaName(b.area))}, ${STAT[b.status].toLowerCase()}, ${short(b.start)}${b.end!==b.start?" – "+short(b.end):""})`).join("; ")}. Change the date, area or session, or cancel the other booking first.`;
+    el.innerHTML = `<b>Double booking.</b> This overlaps ${list.map(b=>`${esc(b.client)} (${esc(areaName(b.area))}, ${stLabel(b).toLowerCase()}, ${short(b.start)}${b.end!==b.start?" – "+short(b.end):""})`).join("; ")}. Change the date, area or session, or cancel the other booking first.`;
   }
   function liveCheck(){
     const c=readForm(); depositHint(c);
@@ -1236,7 +1254,7 @@ input:disabled{opacity:.7}
     sn.hidden = !soft.length;
     if(soft.length) sn.textContent = (c.status==="inquired"
       ? "Heads up: this slot is also wanted by "
-      : "Other inquiries for this slot: ") + soft.map(b=>`${b.client} (${STAT[b.status].toLowerCase()})`).join(", ") +
+      : "Other inquiries for this slot: ") + soft.map(b=>`${b.client} (${stLabel(b).toLowerCase()})`).join(", ") +
       (c.status==="inquired" && soft.some(b=>HOLDS(b.status)) ? ". It's already held, so this one can't be quoted unless that booking is cancelled." : ".");
   }
   ["f-area","f-session","f-start","f-end","f-status","f-total","f-deposit"].forEach(id=>$(id).addEventListener("input", ()=>{
@@ -1379,7 +1397,7 @@ input:disabled{opacity:.7}
     $("weekList").innerHTML = week.length ? week.map(b=>`<button type="button" class="up" data-id="${esc(b.id)}" data-d="${b.start}" data-gobook="1">
       <span class="d">${short(b.start)}<small>${nice(b.start,{weekday:"short"})}</small></span>
       <span style="min-width:0"><strong style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(b.client)}</strong><span class="meta">${esc(b.type)} · ${esc(areaName(b.area))}</span></span>
-      <span class="pill ${b.status}">${STAT[b.status]}</span></button>`).join("") : `<div class="empty">Nothing booked for the next 7 days.</div>`;
+      <span class="pill ${b.status}">${stLabel(b)}</span></button>`).join("") : `<div class="empty">Nothing booked for the next 7 days.</div>`;
   }
 
   // ================= ROUTING =================
@@ -1552,7 +1570,7 @@ input:disabled{opacity:.7}
       return true;
     }
     el.hidden=false;
-    el.innerHTML = `<b>Double booking.</b> This slot is already held by ${hit.map(b=>`${esc(b.client)} (${esc(areaName(b.area))}, ${STAT[b.status].toLowerCase()}, ${short(b.start)})`).join("; ")}. Change the date, area or session, or keep this quote as a draft.`;
+    el.innerHTML = `<b>Double booking.</b> This slot is already held by ${hit.map(b=>`${esc(b.client)} (${esc(areaName(b.area))}, ${stLabel(b).toLowerCase()}, ${short(b.start)})`).join("; ")}. Change the date, area or session, or keep this quote as a draft.`;
     return false;
   }
   ["q-area","q-session","q-start","q-end","q-status"].forEach(id=>$(id).addEventListener("input", ()=>{
@@ -1641,7 +1659,7 @@ input:disabled{opacity:.7}
     $("qdInvoice").textContent = inv ? `View invoice ${inv.invoice_no}` : "Create invoice";
     $("qdInvoice").className = inv ? "" : "primary";
     const dep = b ? ` Deposit received ${pula(b.deposit)} of ${pula(q.total/2)} due.` : "";
-    $("qdNote").innerHTML = `<span class="pill ${q.status}">${QSTAT[q.status]}</span> ${inv ? `Invoiced as <b>${esc(inv.invoice_no)}</b>${inv.revision>1?` (revision ${inv.revision})`:""}. ` : ""}${b ? `On the calendar as <b>${STAT[b.status].toLowerCase()}</b>.${q.status==="confirmed"?dep:""} <button type="button" data-gocal="${esc(b.id)}">Show on calendar</button>` : ""}`;
+    $("qdNote").innerHTML = `<span class="pill ${q.status}">${QSTAT[q.status]}</span> ${inv ? `Invoiced as <b>${esc(inv.invoice_no)}</b>${inv.revision>1?` (revision ${inv.revision})`:""}. ` : ""}${b ? `On the calendar as <b>${stLabel(b).toLowerCase()}</b>.${q.status==="confirmed"?dep:""} <button type="button" data-gocal="${esc(b.id)}">Show on calendar</button>` : ""}`;
     $("qdSent").hidden = q.status!=="draft"; $("qdConfirm").hidden = q.status==="confirmed" || q.status==="declined";
     if(!quiet) window.scrollTo(0,0);
   }
