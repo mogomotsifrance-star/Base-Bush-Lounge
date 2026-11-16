@@ -1532,7 +1532,7 @@ input:disabled{opacity:.7}
       else if(e.key==="Escape"){ pickClose(); }
     });
   }
-  const perHeadQty = (p, guestsText, curQty) => /per person|buffet|lunch|dinner|breakfast/i.test(p.description)
+  const perHeadQty = (p, guestsText, curQty) => /per person|per guest|buffet|lunch|dinner|breakfast|tea break/i.test(p.description)
     ? (parseInt((String(guestsText||"").match(/(\d+)\D*$/)||[])[1]) || curQty || 1) : (curQty || 1);
 
   // ================= QUOTES =================
@@ -1669,7 +1669,7 @@ input:disabled{opacity:.7}
       const rows = $("qItems").querySelectorAll(".irow:not(.head)"); rows[rows.length-1]?.querySelector(".d")?.focus(); return; }
     const p = prices.find(x=>x.id===val); if(!p) return;
     const guests = parseInt(($("q-guests").value.match(/(\d+)\D*$/)||[])[1]) || 1;
-    const perHead = /per person|buffet|lunch|dinner|breakfast/i.test(p.description);
+    const perHead = /per person|per guest|buffet|lunch|dinner|breakfast|tea break/i.test(p.description);
     const blank = qItems.findIndex(i=>!i.description.trim() && !i.unit_price);
     const item = {qty: perHead ? guests : 1, description:p.description, unit_price:Number(p.unit_price)};
     if(blank>=0) qItems[blank] = item; else qItems.push(item);
