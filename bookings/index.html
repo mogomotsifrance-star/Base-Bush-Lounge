@@ -63,7 +63,10 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .day.today .n{color:var(--surface);background:var(--today);border-radius:10px;padding:0 6px;align-self:flex-start}
 .day.past{background:transparent}
 .chip{font-size:11px;line-height:1.25;padding:2px 5px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.chip.confirmed{background:var(--leaf-tint);color:var(--ink);border-left:3px solid var(--leaf)}
+.chip.confirmed{background:var(--leaf);color:var(--surface);border-left:3px solid var(--leaf)}
+.day.hasconf{background:var(--leaf-tint);border-color:var(--leaf)}
+.day.hasconf .n{color:var(--leaf)}
+.day.hasconf.today .n{color:var(--surface)}
 .chip.quoted{background:var(--amber-tint);color:var(--ink);border:1px dashed var(--amber)}
 .chip.inquired{background:var(--surface);color:var(--muted);border:1px solid var(--line)}
 .chip.cancelled{background:var(--grey-tint);color:var(--muted);text-decoration:line-through}
@@ -721,7 +724,7 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
     for(let i=0;i<42;i++){
       const d = new Date(start); d.setDate(start.getDate()+i);
       const s = iso(d), list = onDate(s);
-      const cls = ["day"]; if(d.getMonth()!==view.getMonth()) cls.push("out"); if(s===today) cls.push("today"); if(s===selected) cls.push("sel"); if(s<today) cls.push("past");
+      const cls = ["day"]; if(d.getMonth()!==view.getMonth()) cls.push("out"); if(s===today) cls.push("today"); if(s===selected) cls.push("sel"); if(s<today) cls.push("past"); if(list.some(b=>b.status==="confirmed")) cls.push("hasconf");
       const chips = list.slice(0,2).map(b=>`<div class="chip ${b.status}" title="${esc(b.client)} · ${esc(b.area)}">${esc(b.client)}</div>`).join("");
       const more = list.length>2 ? `<div class="more">+${list.length-2} more</div>` : "";
       const dots = `<div class="dots">${list.filter(b=>b.status!=="cancelled").map(b=>`<i class="dot ${b.status}"></i>`).join("")}</div>`;
