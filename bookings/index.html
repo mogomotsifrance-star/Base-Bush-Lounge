@@ -391,6 +391,7 @@ input:disabled{opacity:.7}
     <p class="eyebrow">Staff only</p>
     <h1>Base Bush Lounge Bookings</h1>
     <p class="sub" id="authMsg">Enter your work email and we'll email you a sign-in code.</p>
+    <p class="hint">You only need a code the first time on each phone or computer. After that you stay signed in until you press Sign out.</p>
     <form id="authForm" novalidate>
       <label>Email<input type="email" id="authEmail" autocomplete="email" inputmode="email" required placeholder="you@example.com"></label>
       <button type="submit" class="primary" id="authBtn">Email me a sign-in code</button>
@@ -910,7 +911,11 @@ input:disabled{opacity:.7}
 (function(){
   const SUPABASE_URL = "https://aovthooybcksflcxvphw.supabase.co";
   const SUPABASE_KEY = "sb_publishable_wA1a-6spAmvOE7FCy0B1Ag_hfO8nUjZ"; // publishable key: safe in the browser, access is enforced by database rules
-  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{persistSession:true, detectSessionInUrl:true}});
+  // Stay signed in on this device until "Sign out" is pressed: the session is kept in this device's storage
+  // and refreshed automatically, so the emailed code is only needed the first time on each device.
+  let store; try{ localStorage.setItem("bbl-test","1"); localStorage.removeItem("bbl-test"); store = localStorage; }catch(_){ store = undefined; }
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storage:store}});
+  if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
 
   const ENTIRE = "Entire venue";
   const AREAS = ["House", "Conference", "Restaurant", ENTIRE];
@@ -1907,7 +1912,9 @@ input:disabled{opacity:.7}
   let started = false, channel = null;
   async function startApp(session){
     me = (session.user.email||"").toLowerCase();
-    const st = await sb.rpc("is_staff");
+    let st = await sb.rpc("is_staff");
+    if(st.error){ await new Promise(r=>setTimeout(r,1500)); st = await sb.rpc("is_staff"); }
+    if(st.error){ show("appView"); notice("Can't reach the server right now. Check your connection; the app reconnects automatically."); setTimeout(()=>startApp(session), 15000); return; }
     if(!st.data){ $("deniedEmail").textContent = me; show("deniedView"); return; }
     show("appView"); $("who").textContent = me; route();
     isAdmin = !!(await sb.rpc("is_admin")).data;
@@ -1933,10 +1940,12 @@ input:disabled{opacity:.7}
   window.addEventListener("appinstalled", ()=>{ $("installBtn").hidden = true; toast("App installed. Open it from your home screen."); });
   if(!standalone && /iphone|ipad|ipod/i.test(navigator.userAgent)) $("iosHint").hidden = false;
 
+  // Defer work out of the auth callback (Supabase recommends not awaiting other calls inside it).
   sb.auth.onAuthStateChange((evt, session)=>{
-    if(session) startApp(session);
+    if(session){ if(evt==="SIGNED_IN" || evt==="INITIAL_SESSION") setTimeout(()=>startApp(session), 0); }
     else if(evt==="SIGNED_OUT" || evt==="INITIAL_SESSION") show("authView");
   });
+  document.addEventListener("visibilitychange", ()=>{ if(document.hidden) sb.auth.stopAutoRefresh(); else sb.auth.startAutoRefresh(); });
 })();
 </script>
 </body>
