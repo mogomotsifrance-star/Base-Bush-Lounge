@@ -39,7 +39,7 @@ h1{font-family:var(--display);font-weight:700;font-size:1.75rem;margin:0;letter-
 .legend{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:12.5px}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
-.sw.conf{background:var(--leaf)} .sw.prov{border:2px dashed var(--amber);background:var(--amber-tint)} .sw.canc{background:var(--grey-tint);border:1px solid var(--line)}
+.sw.conf{background:var(--leaf)} .sw.quot{border:2px dashed var(--amber);background:var(--amber-tint)} .sw.inq{border:1px solid var(--muted);background:var(--surface)} .sw.canc{background:var(--grey-tint);border:1px solid var(--line)}
 .notice{padding:10px 14px;border-radius:8px;background:var(--amber-tint);color:var(--ink);border:1px solid var(--line)}
 .main{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr);gap:20px;align-items:start}
 @media (max-width:860px){.main{grid-template-columns:minmax(0,1fr)}}
@@ -64,12 +64,13 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .day.past{background:transparent}
 .chip{font-size:11px;line-height:1.25;padding:2px 5px;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip.confirmed{background:var(--leaf-tint);color:var(--ink);border-left:3px solid var(--leaf)}
-.chip.provisional{background:var(--amber-tint);color:var(--ink);border:1px dashed var(--amber)}
+.chip.quoted{background:var(--amber-tint);color:var(--ink);border:1px dashed var(--amber)}
+.chip.inquired{background:var(--surface);color:var(--muted);border:1px solid var(--line)}
 .chip.cancelled{background:var(--grey-tint);color:var(--muted);text-decoration:line-through}
 .more{font-size:11px;color:var(--muted)}
 .dots{display:none;gap:3px;flex-wrap:wrap}
 .dot{width:7px;height:7px;border-radius:50%}
-.dot.confirmed{background:var(--leaf)} .dot.provisional{background:var(--amber)}
+.dot.confirmed{background:var(--leaf)} .dot.quoted{background:var(--amber)} .dot.inquired{background:var(--muted)}
 @media (max-width:560px){.day{min-height:52px;padding:4px}.chip,.more{display:none}.dots{display:flex}}
 .side{display:grid;gap:16px}
 .side h3{font-family:var(--display);font-weight:500;font-size:1.15rem;margin:0}
@@ -82,7 +83,9 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .meta{color:var(--muted);font-size:12.5px}
 .pill{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap}
 .pill.confirmed{background:var(--leaf-tint);color:var(--leaf)}
-.pill.provisional{background:var(--amber-tint);color:var(--amber)}
+.pill.quoted{background:var(--amber-tint);color:var(--amber)}
+.pill.inquired{background:var(--grey-tint);color:var(--ink)}
+.pill.staff{background:var(--amber-tint);color:var(--amber)}
 .pill.cancelled{background:var(--grey-tint);color:var(--muted)}
 .empty{color:var(--muted);font-size:13px;padding:10px 0}
 form{display:grid;gap:12px;margin-top:10px}
@@ -130,6 +133,28 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
 .auth h1{font-size:1.6rem}
 .topbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;color:var(--muted);font-size:12.5px}
 .topbar button{padding:5px 10px;min-height:0}
+.list-panel{display:grid;gap:12px}
+.list-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:3px}
+.tabs button{border:0;background:transparent;padding:6px 12px;border-radius:7px;color:var(--muted);font-weight:500;min-height:0}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.tabs .c{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:400;margin-left:4px}
+.listtools{display:flex;gap:8px;flex-wrap:wrap}
+.listtools input{width:auto;min-width:0;flex:1 1 220px}
+.listtools select{width:auto}
+.btable{width:100%;border-collapse:collapse;font-size:13px}
+.btable th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+.btable td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
+.btable td.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.btable th.num{text-align:right}
+.btable tr.past td{color:var(--muted)}
+.btable .sub2{color:var(--muted);font-size:12px}
+.tablewrap{overflow-x:auto}
+.bcards{display:none;gap:8px}
+.bcard{border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:4px;background:var(--bg)}
+.bcard .top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.bcard .actions{margin-top:4px}
+@media (max-width:700px){.tablewrap{display:none}.bcards{display:grid}}
 .staffrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
 .staffrow span{overflow-wrap:anywhere}
 .addstaff{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;margin-top:10px}
@@ -169,7 +194,8 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
     <div style="display:grid;gap:8px;justify-items:start">
       <div class="legend">
         <span><i class="sw conf"></i>Confirmed (deposit paid)</span>
-        <span><i class="sw prov"></i>Provisional hold</span>
+        <span><i class="sw quot"></i>Quoted (date held)</span>
+        <span><i class="sw inq"></i>Inquired</span>
         <span><i class="sw canc"></i>Cancelled</span>
       </div>
       <div class="topbar"><span id="who"></span><button id="signOut">Sign out</button></div>
@@ -253,7 +279,7 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
             <div class="row">
               <label>Guests<input type="number" id="f-guests" min="0" inputmode="numeric"></label>
               <label>Status
-                <select id="f-status"><option value="provisional">Provisional hold</option><option value="confirmed">Confirmed</option><option value="cancelled">Cancelled</option></select>
+                <select id="f-status"><option value="inquired">Inquired</option><option value="quoted">Quoted (holds the date)</option><option value="confirmed">Confirmed</option><option value="cancelled">Cancelled</option></select>
               </label>
             </div>
             <div class="row">
@@ -264,6 +290,7 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
             <label>Notes<textarea id="f-notes" placeholder="Menu, décor, contact person, payment reference…"></textarea></label>
           </fieldset>
           <div id="clash" class="clash" hidden></div>
+          <p class="hint warn" id="softNote" hidden></p>
           <div class="actions">
             <button type="submit" class="primary" id="saveBtn">Save booking</button>
             <button type="button" id="cancelForm">Close</button>
@@ -304,6 +331,32 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
       </section>
     </div>
   </div>
+
+  <section class="panel list-panel" id="listPanel">
+    <div class="list-head">
+      <div><p class="eyebrow">All bookings</p><h3>Bookings</h3></div>
+      <div class="tabs" role="tablist" id="tabs">
+        <button type="button" role="tab" data-tab="all" aria-selected="true">All<span class="c" id="c-all"></span></button>
+        <button type="button" role="tab" data-tab="inquired" aria-selected="false">Inquired<span class="c" id="c-inquired"></span></button>
+        <button type="button" role="tab" data-tab="quoted" aria-selected="false">Quoted<span class="c" id="c-quoted"></span></button>
+        <button type="button" role="tab" data-tab="confirmed" aria-selected="false">Confirmed<span class="c" id="c-confirmed"></span></button>
+        <button type="button" role="tab" data-tab="cancelled" aria-selected="false">Cancelled<span class="c" id="c-cancelled"></span></button>
+      </div>
+    </div>
+    <div class="listtools">
+      <input type="search" id="listSearch" placeholder="Search client, contact, phone, event or area" aria-label="Search bookings">
+      <select id="listWhen" aria-label="Which dates">
+        <option value="upcoming">Upcoming</option><option value="past">Past</option><option value="all">All dates</option>
+      </select>
+    </div>
+    <div class="tablewrap">
+      <table class="btable">
+        <thead><tr><th>Date</th><th>Client</th><th>Event</th><th>Area</th><th class="num">Guests</th><th class="num">Quote</th><th class="num">Deposit</th><th>Status</th><th></th></tr></thead>
+        <tbody id="listBody"></tbody>
+      </table>
+    </div>
+    <div class="bcards" id="listCards"></div>
+  </section>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -317,7 +370,9 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
   const ENTIRE = "Entire venue";
   const AREAS = [ENTIRE, "House", "Conference", "Restaurant"];
   const SESS = {full:"Full day", day:"Daytime", evening:"Evening"};
-  const STAT = {confirmed:"Confirmed", provisional:"Provisional", cancelled:"Cancelled"};
+  const STAT = {inquired:"Inquired", quoted:"Quoted", confirmed:"Confirmed", cancelled:"Cancelled"};
+  const HOLDS = st => st==="quoted" || st==="confirmed";
+  let listTab = "all";
   const $ = id => document.getElementById(id);
   const mobile = () => matchMedia("(max-width:860px)").matches;
 
@@ -341,7 +396,7 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
 
   // Same rule the database enforces; used to warn before saving.
   function clashes(a,b){
-    if(a.status==="cancelled"||b.status==="cancelled") return false;
+    if(!HOLDS(a.status)||!HOLDS(b.status)) return false;
     if(a.end < b.start || b.end < a.start) return false;
     if(!(a.area===b.area || a.area===ENTIRE || b.area===ENTIRE)) return false;
     if(a.start!==a.end || b.start!==b.end || a.session==="full" || b.session==="full") return true;
@@ -393,8 +448,8 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
     $("grid").innerHTML = html;
     const mStart = iso(first), mEnd = iso(new Date(view.getFullYear(), view.getMonth()+1, 0));
     const inMonth = bookings.filter(b=>b.status!=="cancelled" && b.start<=mEnd && b.end>=mStart);
-    const conf = inMonth.filter(b=>b.status==="confirmed"), prov = inMonth.filter(b=>b.status==="provisional");
-    $("stats").innerHTML = `<span><b>${conf.length}</b> confirmed</span><span><b>${prov.length}</b> provisional holds</span><span><b>${pula(conf.reduce((s,b)=>s+b.total,0))}</b> confirmed value this month</span>`;
+    const conf = inMonth.filter(b=>b.status==="confirmed"), prov = inMonth.filter(b=>b.status==="quoted"), inq = inMonth.filter(b=>b.status==="inquired");
+    $("stats").innerHTML = `<span><b>${conf.length}</b> confirmed</span><span><b>${prov.length}</b> quoted</span><span><b>${inq.length}</b> inquiries</span><span><b>${pula(conf.reduce((s,b)=>s+b.total,0))}</b> confirmed value this month</span>`;
   }
   function bkCard(b){
     const depLine = b.total ? ` · deposit ${pula(b.deposit)} of ${pula(b.total/2)} due` : "";
@@ -433,10 +488,47 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
   }
   function renderStaff(){
     if(!isAdmin) return;
-    $("staffList").innerHTML = staff.map(s=>`<div class="staffrow"><span>${esc(s.email)}</span><span class="pill ${s.role==="admin"?"confirmed":"provisional"}">${s.role==="admin"?"Manager":"Staff"}</span>
+    $("staffList").innerHTML = staff.map(s=>`<div class="staffrow"><span>${esc(s.email)}</span><span class="pill ${s.role==="admin"?"confirmed":"staff"}">${s.role==="admin"?"Manager":"Staff"}</span>
       ${s.email===me?`<span class="meta">You</span>`:`<button type="button" class="ghost" data-rmstaff="${esc(s.email)}">Remove</button>`}</div>`).join("");
   }
-  function render(){ renderCal(); renderDay(); renderUpcoming(); renderClients(); }
+  function renderList(){
+    const today = iso(new Date());
+    const when = $("listWhen").value, q = $("listSearch").value.trim().toLowerCase();
+    const inWhen = b => when==="all" || (when==="upcoming" ? b.end>=today : b.end<today);
+    const matches = b => !q || [b.client,b.company,b.phone,b.email,b.type,b.area,b.notes,(clientById(b.clientId)||{}).contact_name,(clientById(b.clientId)||{}).contact_phone]
+      .some(v=>(v||"").toString().toLowerCase().includes(q));
+    const base = bookings.filter(b=>inWhen(b) && matches(b));
+    ["all","inquired","quoted","confirmed","cancelled"].forEach(t=>{ $("c-"+t).textContent = t==="all" ? base.length : base.filter(b=>b.status===t).length; });
+    let list = listTab==="all" ? base : base.filter(b=>b.status===listTab);
+    list = list.slice().sort((a,b)=> when==="past" ? b.start.localeCompare(a.start) : a.start.localeCompare(b.start));
+    const dates = b => b.start===b.end ? nice(b.start,{weekday:"short",day:"numeric",month:"short",year:"numeric"}) : `${short(b.start)} – ${nice(b.end,{day:"numeric",month:"short",year:"numeric"})}`;
+    const contact = b => { const c = clientById(b.clientId)||{}; return [c.contact_name && "Contact: "+c.contact_name, c.contact_phone || b.phone].filter(Boolean).map(esc).join(" · "); };
+    const empty = `<div class="empty">${q ? "No bookings match that search." : listTab==="all" ? "No bookings for these dates yet." : `No ${STAT[listTab].toLowerCase()} bookings for these dates.`}</div>`;
+    $("listBody").innerHTML = list.length ? list.map(b=>`<tr class="${b.end<today?"past":""}">
+      <td style="white-space:nowrap">${esc(dates(b))}<div class="sub2">${esc(SESS[b.session]||"")}</div></td>
+      <td style="min-width:160px"><strong>${esc(b.client)}</strong>${b.company?`<div class="sub2">${esc(b.company)}</div>`:""}<div class="sub2">${contact(b)}</div></td>
+      <td>${esc(b.type)}</td><td>${esc(b.area)}</td>
+      <td class="num">${b.guests??"—"}</td><td class="num">${b.total?pula(b.total):"—"}</td><td class="num">${b.deposit?pula(b.deposit):"—"}</td>
+      <td><span class="pill ${b.status}">${STAT[b.status]}</span></td>
+      <td><button type="button" data-edit="${esc(b.id)}">Edit</button></td></tr>`).join("")
+      : `<tr><td colspan="9">${empty}</td></tr>`;
+    $("listCards").innerHTML = list.length ? list.map(b=>`<div class="bcard">
+      <div class="top"><strong>${esc(b.client)}</strong><span class="pill ${b.status}">${STAT[b.status]}</span></div>
+      <div class="meta">${esc(dates(b))} · ${esc(b.area)}</div>
+      <div class="meta">${esc(b.type)}${b.guests?` · ${b.guests} guests`:""}${b.total?` · quote ${pula(b.total)}`:""}${b.deposit?` · deposit ${pula(b.deposit)}`:""}</div>
+      ${contact(b)?`<div class="meta">${contact(b)}</div>`:""}
+      <div class="actions"><button type="button" data-edit="${esc(b.id)}">Edit</button></div></div>`).join("") : empty;
+  }
+  $("tabs").addEventListener("click", e=>{
+    const t = e.target.closest("[data-tab]"); if(!t) return;
+    listTab = t.dataset.tab;
+    $("tabs").querySelectorAll("[data-tab]").forEach(x=>x.setAttribute("aria-selected", x===t ? "true" : "false"));
+    renderList();
+  });
+  $("listSearch").addEventListener("input", renderList);
+  $("listWhen").addEventListener("change", renderList);
+
+  function render(){ renderCal(); renderDay(); renderUpcoming(); renderClients(); renderList(); }
 
   // ---------- form ----------
   function readForm(){
@@ -467,7 +559,7 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
     fillClient(b ? clientById(b.clientId) : client || null);
     $("f-type").value = b?.type||"Wedding"; $("f-area").value = b?.area||ENTIRE; $("f-session").value = b?.session||"full";
     $("f-start").value = b?.start||selected; $("f-end").value = b?.end||selected;
-    $("f-guests").value = b?.guests??""; $("f-status").value = b?.status||"provisional";
+    $("f-guests").value = b?.guests??""; $("f-status").value = b?.status||"inquired";
     $("f-total").value = b?.total||""; $("f-deposit").value = b?.deposit||""; $("f-notes").value = b?.notes||"";
     $("delBtn").hidden = !b; $("delConfirm").hidden = true;
     $("formPanel").hidden = false; liveCheck();
@@ -503,7 +595,17 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
   function liveCheck(){
     const c=readForm(); depositHint(c);
     if(c.start && c.end && c.end<c.start){ $("clash").hidden=false; $("clash").innerHTML="<b>Dates.</b> The end date is before the start date."; $("saveBtn").disabled=true; return; }
-    showClash(c.start ? findClashes(c, bookings) : []);
+    const hard = c.start ? findClashes(c, bookings) : [];
+    showClash(hard);
+    // Inquiries don't hold dates, but flag any overlap so nobody is surprised.
+    const sn = $("softNote");
+    const soft = (!hard.length && c.start && c.status!=="cancelled") ? bookings.filter(b=>b.id!==c.id && b.status!=="cancelled" &&
+      clashes({...c,status:"quoted"},{...b,status:"quoted"})) : [];
+    sn.hidden = !soft.length;
+    if(soft.length) sn.textContent = (c.status==="inquired"
+      ? "Heads up: this slot is also wanted by "
+      : "Other inquiries for this slot: ") + soft.map(b=>`${b.client} (${STAT[b.status].toLowerCase()})`).join(", ") +
+      (c.status==="inquired" && soft.some(b=>HOLDS(b.status)) ? ". It's already held, so this one can't be quoted unless that booking is cancelled." : ".");
   }
   ["f-area","f-session","f-start","f-end","f-status","f-total","f-deposit"].forEach(id=>$(id).addEventListener("input", ()=>{
     if(id==="f-start" && (!$("f-end").value || $("f-end").value<$("f-start").value)) $("f-end").value=$("f-start").value;
@@ -553,6 +655,8 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
     const day = e.target.closest(".day");
     if(day){ selected = day.dataset.d; const d=parse(selected); if(d.getMonth()!==view.getMonth()) view=new Date(d.getFullYear(),d.getMonth(),1); render();
       if(mobile()) $("dayPanel").scrollIntoView({block:"start"}); return; }
+    const ed = e.target.closest("[data-edit]");
+    if(ed){ const b = bookings.find(x=>x.id===ed.dataset.edit); if(b){ selected=b.start; const d=parse(b.start); view=new Date(d.getFullYear(),d.getMonth(),1); render(); openForm(b); } return; }
     const again = e.target.closest("[data-client]");
     if(again){ const c = clientById(again.dataset.client); if(c){ fillClient(c); openForm(null, c); } return; }
     const rm = e.target.closest("[data-rmstaff]");
