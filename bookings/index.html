@@ -20,17 +20,18 @@ body{margin:0;font-size:14px}
   --leaf:#2f5d46; --leaf-tint:#dfe9e1; --amber:#9a6417; --amber-tint:#f5e8d2;
   --grey-tint:#e7e8e2; --danger:#a8362c; --danger-tint:#f6e0dd; --today:#2f5d46; --logo-filter:none;
   --hero-a:#1d3b2c; --hero-b:#2f5d46; --gold:#d9a441; --ochre:#b06f12; --ochre-tint:#f7ead3; --slate:#2d5a86; --slate-tint:#e2ebf4;
+  --ochre-a:#6b3f08; --ochre-b:#a8680f; --slate-a:#16314d; --slate-b:#2d5a86;
   --display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
   --body:"Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#131915; --surface:#1b231e; --ink:#e6ebe2; --muted:#98a59a; --line:#2c3730;
   --leaf:#7fb894; --leaf-tint:#22382b; --amber:#dca64c; --amber-tint:#3a2e19;
-  --grey-tint:#262d28; --danger:#e5857a; --danger-tint:#3d2220; --today:#7fb894; --logo-filter:invert(1); --hero-a:#16291f; --hero-b:#24483a; --gold:#e3b45c; --ochre:#e0a24a; --ochre-tint:#3a2c16; --slate:#86b2dd; --slate-tint:#1d2c3b; color-scheme:dark}}
+  --grey-tint:#262d28; --danger:#e5857a; --danger-tint:#3d2220; --today:#7fb894; --logo-filter:invert(1); --hero-a:#16291f; --hero-b:#24483a; --gold:#e3b45c; --ochre:#e0a24a; --ochre-tint:#3a2c16; --slate:#86b2dd; --slate-tint:#1d2c3b; --ochre-a:#3a2306; --ochre-b:#6b4511; --slate-a:#0f2134; --slate-b:#21415f; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#131915; --surface:#1b231e; --ink:#e6ebe2; --muted:#98a59a; --line:#2c3730;
   --leaf:#7fb894; --leaf-tint:#22382b; --amber:#dca64c; --amber-tint:#3a2e19;
-  --grey-tint:#262d28; --danger:#e5857a; --danger-tint:#3d2220; --today:#7fb894; --logo-filter:invert(1); --hero-a:#16291f; --hero-b:#24483a; --gold:#e3b45c; --ochre:#e0a24a; --ochre-tint:#3a2c16; --slate:#86b2dd; --slate-tint:#1d2c3b; color-scheme:dark}
+  --grey-tint:#262d28; --danger:#e5857a; --danger-tint:#3d2220; --today:#7fb894; --logo-filter:invert(1); --hero-a:#16291f; --hero-b:#24483a; --gold:#e3b45c; --ochre:#e0a24a; --ochre-tint:#3a2c16; --slate:#86b2dd; --slate-tint:#1d2c3b; --ochre-a:#3a2306; --ochre-b:#6b4511; --slate-a:#0f2134; --slate-b:#21415f; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.45}
 .wrap{max-width:1180px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:20px}
@@ -224,7 +225,7 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
 .linknote{font-size:12.5px;color:var(--muted)}
 .linknote button{padding:2px 8px;min-height:0;font-size:12.5px}
 .prow{display:grid;grid-template-columns:minmax(0,1fr) 120px auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
-.pcat{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--leaf);font-weight:600;margin:14px 0 2px}
+.pcat{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--c,var(--leaf));font-weight:600;margin:14px 0 2px}
 .pricelist{max-height:520px;overflow-y:auto}
 /* ---- printable quote (paper look in every theme) ---- */
 .docbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -314,6 +315,40 @@ input:disabled{opacity:.7}
 .kpi{border-left:4px solid var(--c,var(--leaf))}
 .kpi b{color:var(--c,var(--ink))}
 .k-quote{--c:var(--ochre)} .k-inv{--c:var(--slate)} .k-book{--c:var(--leaf)}
+/* ---- one theme across every page: each section has its own colour ---- */
+#homeView,#bookingsView{--c:var(--leaf);--ct:var(--leaf-tint);--h1:var(--hero-a);--h2:var(--hero-b)}
+#quotesView{--c:var(--ochre);--ct:var(--ochre-tint);--h1:var(--ochre-a);--h2:var(--ochre-b)}
+#invoicesView{--c:var(--slate);--ct:var(--slate-tint);--h1:var(--slate-a);--h2:var(--slate-b)}
+#bookingsView > header,#quotesView > .view > header,#invoicesView > .view > header{
+  position:relative;overflow:hidden;padding:clamp(18px,3vw,30px);border-radius:16px;color:#fff;align-items:center;
+  background:radial-gradient(120% 160% at 100% 0%,rgba(217,164,65,.26) 0%,rgba(217,164,65,0) 45%),linear-gradient(135deg,var(--h1) 0%,var(--h2) 100%)}
+#bookingsView > header::after,#quotesView > .view > header::after,#invoicesView > .view > header::after{
+  content:"";position:absolute;inset:auto 0 0 0;height:4px;background:linear-gradient(90deg,var(--gold),var(--ochre) 40%,var(--slate) 75%,var(--hero-b))}
+.view > header h1{color:#fff}
+.view > header .sub{color:rgba(255,255,255,.8)}
+.view > header .eyebrow{color:var(--gold);font-weight:600}
+.view > header button{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.45);color:#fff;font-weight:600}
+.view > header button:hover{border-color:#fff;background:rgba(255,255,255,.16)}
+.view > header button.primary{background:var(--gold);border-color:var(--gold);color:#1d2a20;font-weight:700}
+.view > header button:focus-visible{outline:2px solid #fff}
+.view > header .legend{color:rgba(255,255,255,.88)}
+.view > header .sw.conf{background:#8fd3a5}
+.view > header .sw.quot{border-color:var(--gold);background:rgba(217,164,65,.25)}
+.view > header .sw.inq{border-color:#fff;background:transparent}
+.view > header .sw.canc{background:rgba(255,255,255,.3);border-color:rgba(255,255,255,.5)}
+#bookingsView .panel,#quotesView .panel,#invoicesView .panel,#homeView .homegrid .panel{border-top:3px solid var(--c)}
+#bookingsView .eyebrow,#quotesView .panel .eyebrow,#invoicesView .panel .eyebrow,#homeView .homegrid .eyebrow{color:var(--c);font-weight:600}
+#quotesView button.primary,#invoicesView button.primary{background:var(--c);border-color:var(--c);color:var(--surface)}
+.view > header button.primary{background:var(--gold)!important;border-color:var(--gold)!important;color:#1d2a20!important}
+.tabs button[aria-selected="true"]{color:var(--c,var(--ink));box-shadow:inset 0 -2px 0 var(--c,var(--leaf)),0 1px 2px rgba(0,0,0,.08)}
+.docbar{padding:10px 12px;border-radius:12px;background:var(--ct);border:1px solid var(--line);border-top:3px solid var(--c)}
+.stickybar{border-top:3px solid var(--c,var(--leaf))}
+.navlinks a[data-nav="home"][aria-current="page"],.navlinks a[data-nav="bookings"][aria-current="page"]{color:var(--leaf);box-shadow:inset 0 -2px 0 var(--leaf),0 1px 2px rgba(0,0,0,.08)}
+.navlinks a[data-nav="quotes"][aria-current="page"]{color:var(--ochre);box-shadow:inset 0 -2px 0 var(--ochre),0 1px 2px rgba(0,0,0,.08)}
+.navlinks a[data-nav="invoices"][aria-current="page"]{color:var(--slate);box-shadow:inset 0 -2px 0 var(--slate),0 1px 2px rgba(0,0,0,.08)}
+.auth.panel{border-top:4px solid var(--leaf);position:relative;overflow:hidden}
+.auth.panel::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:linear-gradient(90deg,var(--gold),var(--ochre) 40%,var(--slate) 75%,var(--hero-b))}
+.auth-logo{width:96px;height:auto;filter:var(--logo-filter)}
 </style>
 </head>
 <body>
@@ -321,6 +356,7 @@ input:disabled{opacity:.7}
 <!-- Sign-in -->
 <div class="wrap" id="authView" hidden>
   <div class="auth panel">
+    <img class="auth-logo" src="logo.png" alt="Base Bush Lounge">
     <p class="eyebrow">Staff only</p>
     <h1>Base Bush Lounge Bookings</h1>
     <p class="sub" id="authMsg">Enter your work email and we'll send you a sign-in link.</p>
