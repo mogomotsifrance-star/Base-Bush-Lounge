@@ -382,7 +382,7 @@ input:disabled{opacity:.7}
 <div class="wrap" id="deniedView" hidden>
   <div class="auth panel">
     <h1>No access yet</h1>
-    <p class="sub">You're signed in as <b id="deniedEmail"></b>, but this email isn't on the staff list. Ask the manager to add you, then reload this page.</p>
+    <p class="sub">You're signed in as <b id="deniedEmail"></b>, but this email isn't on the staff list. Ask a supervisor to add you, then reload this page.</p>
     <button id="deniedOut">Sign out</button>
   </div>
 </div>
@@ -440,13 +440,13 @@ input:disabled{opacity:.7}
     <div class="homegrid">
       <section class="panel"><p class="eyebrow">Next 7 days</p><h3>Coming up</h3><div class="upcoming" id="weekList"></div></section>
       <section class="panel" id="staffPanel" hidden>
-        <p class="eyebrow">Manager only</p>
+        <p class="eyebrow">Supervisor only</p>
         <h3>Staff access</h3>
-        <p class="hint">People on this list can sign in and manage bookings. Managers can also add or remove staff.</p>
+        <p class="hint">People on this list can sign in and manage bookings. Supervisors can also add or remove staff, delete clients, and edit the price list.</p>
         <div id="staffList"></div>
         <form class="addstaff" id="staffForm" novalidate>
           <input type="email" id="s-email" placeholder="staff@email.com" aria-label="Staff email" inputmode="email">
-          <select id="s-role" aria-label="Role"><option value="staff">Staff</option><option value="admin">Manager</option></select>
+          <select id="s-role" aria-label="Role"><option value="staff">Staff</option><option value="admin">Supervisor</option></select>
           <button type="submit" class="primary">Add</button>
         </form>
       </section>
@@ -604,6 +604,7 @@ input:disabled{opacity:.7}
       <section class="panel">
         <p class="eyebrow">Client register</p>
         <h3>Clients</h3>
+        <p class="hint" id="clientHint2"></p>
         <input id="clientSearch" class="search" type="search" placeholder="Search name, company, phone or email" aria-label="Search clients">
         <div class="clients" id="clients"></div>
       </section>
@@ -977,6 +978,7 @@ input:disabled{opacity:.7}
       : `<div class="empty">No upcoming bookings yet. Your first one will show here.</div>`;
   }
   function renderClients(){
+    $("clientHint2").textContent = isAdmin ? "As a supervisor you can remove a client once they have no bookings, quotes or invoices." : "";
     $("clientList").innerHTML = clients.map(c=>`<option value="${esc(c.name)}">${esc([c.company,c.phone].filter(Boolean).join(" · "))}</option>`).join("");
     const q = $("clientSearch").value.trim().toLowerCase();
     const shown = q ? clients.filter(c=>[c.name,c.company,c.phone,c.email].some(v=>(v||"").toLowerCase().includes(q))) : clients;
@@ -990,7 +992,7 @@ input:disabled{opacity:.7}
   }
   function renderStaff(){
     if(!isAdmin) return;
-    $("staffList").innerHTML = staff.map(s=>`<div class="staffrow"><span>${esc(s.email)}</span><span class="pill ${s.role==="admin"?"confirmed":"staff"}">${s.role==="admin"?"Manager":"Staff"}</span>
+    $("staffList").innerHTML = staff.map(s=>`<div class="staffrow"><span>${esc(s.email)}</span><span class="pill ${s.role==="admin"?"confirmed":"staff"}">${s.role==="admin"?"Supervisor":"Staff"}</span>
       ${s.email===me?`<span class="meta">You</span>`:`<button type="button" class="ghost" data-rmstaff="${esc(s.email)}">Remove</button>`}</div>`).join("");
   }
   function renderList(){
@@ -1180,7 +1182,7 @@ input:disabled{opacity:.7}
       if(linked) delete row.total;
       const r = editingId ? await sb.from("bookings").update(row).eq("id", editingId).select("id").single() : await sb.from("bookings").insert(row).select("id").single();
       if(r.error){
-        if(!clientId && !editingId) await sb.from("clients").delete().eq("id", cid); // don't leave an orphan client (managers only; harmless otherwise)
+        if(!clientId && !editingId) await sb.from("clients").delete().eq("id", cid); // don't leave an orphan client (supervisors only; harmless otherwise)
         throw r.error;
       }
       const bid = r.data.id;
@@ -1361,7 +1363,7 @@ input:disabled{opacity:.7}
     $("priceOptions").innerHTML = act.map(p=>`<option value="${esc(p.description)}"></option>`).join("");
     $("priceForm").hidden = !isAdmin;
     $("priceHint").textContent = isAdmin ? "Prices fill in automatically when you add an item to a quote. Change a price here and press Save; existing quotes keep the price they were sent with."
-      : "Prices fill in automatically when you add an item to a quote. You can still change the price on any quote. Ask a manager to update this list.";
+      : "Prices fill in automatically when you add an item to a quote. You can still change the price on any quote. Ask a supervisor to update this list.";
     const allCats = [...new Set(prices.map(p=>p.category))];
     $("priceList").innerHTML = allCats.map(c=>`<div class="pcat">${esc(c)}</div>` + prices.filter(p=>p.category===c).map(p=> isAdmin
       ? `<div class="prow" data-prow="${esc(p.id)}"><input value="${esc(p.description)}" data-pf="description" aria-label="Description"><input type="number" min="0" step="1" value="${Number(p.unit_price)}" data-pf="unit_price" class="money" aria-label="Price"><span style="display:flex;gap:4px"><button type="button" data-psave="${esc(p.id)}">Save</button><button type="button" class="ghost" data-pdel="${esc(p.id)}">Remove</button></span></div>`
