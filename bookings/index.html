@@ -332,6 +332,8 @@ input:disabled{opacity:.7}
 #bookingsView > header,#quotesView > .view > header,#invoicesView > .view > header{
   position:relative;overflow:hidden;padding:clamp(18px,3vw,30px);border-radius:16px;color:#fff;align-items:center;
   background:radial-gradient(120% 160% at 100% 0%,rgba(217,164,65,.26) 0%,rgba(217,164,65,0) 45%),linear-gradient(135deg,var(--h1) 0%,var(--h2) 100%)}
+#bookingsView > header{background:linear-gradient(90deg,rgba(22,44,33,.93) 0%,rgba(22,44,33,.8) 40%,rgba(22,44,33,.45) 75%,rgba(22,44,33,.3) 100%),url("hero-deck.jpg") center 40%/cover no-repeat,linear-gradient(135deg,var(--hero-a),var(--hero-b))}
+@media (max-width:700px){#bookingsView > header{background:linear-gradient(180deg,rgba(22,44,33,.8) 0%,rgba(22,44,33,.9) 100%),url("hero-deck.jpg") 55% 40%/cover no-repeat,var(--hero-a)}}
 #bookingsView > header::after,#quotesView > .view > header::after,#invoicesView > .view > header::after{
   content:"";position:absolute;inset:auto 0 0 0;height:4px;background:linear-gradient(90deg,var(--gold),var(--ochre) 40%,var(--slate) 75%,var(--hero-b))}
 .view > header h1{color:#fff}
