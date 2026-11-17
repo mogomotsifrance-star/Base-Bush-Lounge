@@ -420,6 +420,21 @@ input:disabled{opacity:.7}
 .ipick .none{padding:10px 12px;color:var(--muted);font-size:12.5px}
 .irow .d{cursor:text;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:30px}
 .qdoc .cork{margin-top:8px;padding:7px 9px;border:1px dashed #bbb;font-size:10.5px;color:#333}
+/* Day popup: one day's bookings and what's still free */
+.dayback{position:fixed;inset:0;z-index:70;background:rgba(10,20,14,.45);display:grid;place-items:center;padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+.daydlg{background:var(--surface);color:var(--ink);border-radius:16px;width:min(560px,100%);max-height:min(86vh,760px);overflow:auto;box-shadow:0 24px 60px -20px rgba(0,0,0,.5);border-top:4px solid var(--leaf)}
+.daydlg .dh{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:18px 20px 10px;position:sticky;top:0;background:var(--surface);z-index:1}
+.daydlg .dh h3{font-family:var(--display);font-size:1.35rem;margin:0}
+.daydlg .db{padding:0 20px 18px;display:grid;gap:14px}
+.avail{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.avail div{border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:grid;gap:2px;background:var(--bg)}
+.avail b{font-size:12.5px}
+.avail span{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.avail .free{border-color:var(--leaf);background:var(--leaf-tint)}
+.avail .free span{color:var(--leaf);font-weight:600}
+.avail .held{border-color:var(--amber);background:var(--amber-tint)}
+.avail .taken{border-color:var(--line);background:var(--grey-tint)}
+@media (max-width:560px){.dayback{padding:0;place-items:end stretch}.daydlg{width:100%;max-height:88vh;border-radius:16px 16px 0 0}.avail{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -956,6 +971,16 @@ input:disabled{opacity:.7}
     </div>
   </div><!-- /invoicesView -->
 </div>
+<div class="dayback" id="dayBack" hidden>
+  <div class="daydlg" role="dialog" aria-modal="true" aria-labelledby="dayDlgTitle">
+    <div class="dh"><div><p class="eyebrow" id="dayDlgSub">Bookings</p><h3 id="dayDlgTitle">Day</h3></div><button type="button" class="ghost x" id="dayDlgClose" aria-label="Close">✕</button></div>
+    <div class="db">
+      <div class="avail" id="dayAvail"></div>
+      <div class="agenda" id="dayDlgList"></div>
+      <div class="actions"><button type="button" class="primary" id="dayDlgBook">Book this date</button><span class="spacer"></span><button type="button" id="dayDlgClose2">Close</button></div>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
@@ -1035,6 +1060,7 @@ input:disabled{opacity:.7}
     if(cb.error || bb.error || qb.error || pb.error || ib.error){ notice("Couldn't load your data. Check your connection and reload."); return; }
     clients = cb.data; quotes = qb.data; prices = pb.data; invoices = ib.data; rawBookings = bb.data; bookings = rawBookings.map(mapBooking);
     notice(""); render(); if(!$("formPanel").hidden) liveCheck();
+    if(dayOpen && !$("dayBack").hidden) openDay(dayOpen, true);
     if(viewId && !$("viewPanel").hidden){ const vb = bookings.find(x=>x.id===viewId); if(vb) openView(vb, true); else closeView(); } if(!$("qEditView").hidden) qCheck();
     if(!$("qDocView").hidden && docQuoteId) showDoc(docQuoteId, true);
     if(!$("iDocView").hidden && docInvId) showInvoice(docInvId, true);
@@ -1114,6 +1140,33 @@ input:disabled{opacity:.7}
       <div class="meta">${esc(b.type)} · ${esc(areaName(b.area))} · ${esc(range)}${b.guests?` · ${esc(b.guests)} guests`:""}</div>
       <div class="meta">${[b.company,b.phone,b.email].filter(Boolean).map(esc).join(" · ")}${depLine}</div></button>`;
   }
+  // ---- day popup ----
+  let dayOpen = null, dayReturn = null;
+  function openDay(s, quiet){
+    dayOpen = s; if(!quiet) dayReturn = document.activeElement;
+    const list = onDate(s);
+    $("dayDlgTitle").textContent = nice(s);
+    const live = list.filter(b=>b.status!=="cancelled");
+    $("dayDlgSub").textContent = live.length ? `${live.length} booking${live.length===1?"":"s"} on this day` : "No bookings on this day";
+    // What's still free in each area (quoted/confirmed hold an area; Entire venue holds all three)
+    $("dayAvail").innerHTML = ["House","Conference","Restaurant"].map(a=>{
+      const here = live.filter(b=>b.area===a || b.area===ENTIRE);
+      const hold = here.filter(b=>HOLDS(b.status));
+      const cls = hold.some(b=>b.status==="confirmed") ? "taken" : hold.length ? "held" : "free";
+      const txt = hold.length ? (cls==="taken" ? "Booked: " : "Held: ") + hold.map(b=>`${b.client}${b.session!=="full"?` (${SESS[b.session].toLowerCase()})`:""}`).join(", ")
+        : here.length ? `Free · ${here.length} inquiry` : "Free";
+      return `<div class="${cls}"><b>${esc(areaName(a))}</b><span>${esc(txt)}</span></div>`;
+    }).join("");
+    $("dayDlgList").innerHTML = list.length ? list.map(bkCard).join("") : `<div class="empty">Nothing booked on this day yet.</div>`;
+    $("dayBack").hidden = false; document.body.classList.add("sheet");
+    if(!quiet) $("dayDlgClose").focus();
+  }
+  function closeDay(){ if($("dayBack").hidden) return; $("dayBack").hidden = true; dayOpen = null; if($("formPanel").hidden && $("viewPanel").hidden) document.body.classList.remove("sheet"); try{ dayReturn && dayReturn.focus({preventScroll:true}); }catch(_){} }
+  $("dayDlgClose").onclick = $("dayDlgClose2").onclick = closeDay;
+  $("dayBack").addEventListener("click", e=>{ if(e.target === $("dayBack")) closeDay(); });
+  document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeDay(); });
+  $("dayDlgBook").onclick = ()=>{ const s0 = dayOpen; closeDay(); if(s0){ selected = s0; openForm(null); } };
+
   function renderDay(){
     $("dayLabel").textContent = nice(selected);
     const list = onDate(selected);
@@ -1398,7 +1451,9 @@ input:disabled{opacity:.7}
   document.addEventListener("click", async e=>{
     const day = e.target.closest(".day");
     if(day){ selected = day.dataset.d; const d=parse(selected); if(d.getMonth()!==view.getMonth()) view=new Date(d.getFullYear(),d.getMonth(),1); render();
-      if(mobile()) $("dayPanel").scrollIntoView({block:"start"}); return; }
+      openDay(selected); return; }
+    const dlgBk = e.target.closest("#dayDlgList .bk");
+    if(dlgBk){ const b = bookings.find(x=>x.id===dlgBk.dataset.id); closeDay(); if(b) openView(b); return; }
     const ed = e.target.closest("[data-edit]");
     if(ed){ const b = bookings.find(x=>x.id===ed.dataset.edit); if(b){ selected=b.start; const d=parse(b.start); view=new Date(d.getFullYear(),d.getMonth(),1); render(); openForm(b); } return; }
     const again = e.target.closest("[data-client]");
@@ -1476,7 +1531,7 @@ input:disabled{opacity:.7}
     const view = ["home","bookings","quotes","invoices"].includes(v) ? v : "home";
     $("homeView").hidden = view!=="home"; $("bookingsView").hidden = view!=="bookings"; $("quotesView").hidden = view!=="quotes"; $("invoicesView").hidden = view!=="invoices";
     document.querySelectorAll("[data-nav]").forEach(a=>a.setAttribute("aria-current", a.dataset.nav===view ? "page" : "false"));
-    if(view!=="bookings"){ closeForm(); closeView(); }
+    if(view!=="bookings"){ closeForm(); closeView(); closeDay(); }
     if(view==="quotes" && $("qEditView").hidden && $("qDocView").hidden && $("cDocView").hidden) showQList();
     if(view==="invoices" && $("iEditView").hidden && $("iDocView").hidden) showIList();
     document.title = (view==="home" ? "" : ({bookings:"Bookings",quotes:"Quotes",invoices:"Invoices"})[view]+" · ") + "Base Bush Lounge";
