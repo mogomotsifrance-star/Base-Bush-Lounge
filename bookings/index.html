@@ -419,6 +419,7 @@ input:disabled{opacity:.7}
 .ipick button.cur{font-weight:600}
 .ipick .none{padding:10px 12px;color:var(--muted);font-size:12.5px}
 .irow .d{cursor:text;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:30px}
+.qdoc .cork{margin-top:8px;padding:7px 9px;border:1px dashed #bbb;font-size:10.5px;color:#333}
 </style>
 </head>
 <body>
@@ -1764,6 +1765,9 @@ input:disabled{opacity:.7}
   }
   const DOC_BANK = `<div class="bank"><div class="h">Base Bush Lounge banking details</div>
     <dl><dt>Bank</dt><dd>First National Bank (FNB)</dd><dt>Branch</dt><dd>Main Branch</dd><dt>Account number</dt><dd>63128295804</dd></dl></div>`;
+  // Corkage rates from the Small/Large Events T&Cs 2026, shown under the quote's line items
+  const DOC_CORKAGE = `<div class="cork"><b>Corkage</b> (outside alcohol only with written consent from Base Bush Lounge):
+    small events of 30 guests or fewer P3 500,00 flat fee · otherwise P100,00 per case of beer/cider · P150,00 per bottle of wine · P250,00 per bottle of spirits.</div>`;
   const DOC_FOOT = `<div class="foot">Base Bush Lounge · Mokolodi · Tel ${BBL_TEL} · ${BBL_EMAIL} · www.basebushlounge.com</div>`;
 
   function showDoc(id, quiet){
@@ -1774,7 +1778,7 @@ input:disabled{opacity:.7}
     $("qdoc").innerHTML = `
       <div class="qtop"><img src="logo.png" alt="Base Bush Lounge">
         <div class="qno"><h2>QUOTATION NO: ${esc(q.quote_no)}</h2>${q.client_ref?`<div><b>CLIENT REF: ${esc(q.client_ref)}</b></div>`:""}<div>DATE: ${q.quote_date.replace(/-/g,"/")}</div></div></div>
-      ${docParties(c)}${docEvent(q,c)}${docLines(q.items||[])}
+      ${docParties(c)}${docEvent(q,c)}${docLines(q.items||[])}${DOC_CORKAGE}
       <div class="bottom">
         ${DOC_BANK}
         <div class="sums"><div><span>SUBTOTAL</span><span>${qm(q.subtotal)}</span></div><div><span>VAT${Number(q.vat_rate)?` (${Number(q.vat_rate)}%)`:""}</span><span>${qm(q.vat_amount)}</span></div>
