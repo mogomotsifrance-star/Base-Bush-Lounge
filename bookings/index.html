@@ -426,7 +426,7 @@ input:disabled{opacity:.7}
 .daydlg .dh{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:18px 20px 10px;position:sticky;top:0;background:var(--surface);z-index:1}
 .daydlg .dh h3{font-family:var(--display);font-size:1.35rem;margin:0}
 .daydlg .db{padding:0 20px 18px;display:grid;gap:14px}
-.avail{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.avail{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .avail div{border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:grid;gap:2px;background:var(--bg)}
 .avail b{font-size:12.5px}
 .avail span{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
@@ -434,7 +434,7 @@ input:disabled{opacity:.7}
 .avail .free span{color:var(--leaf);font-weight:600}
 .avail .held{border-color:var(--amber);background:var(--amber-tint)}
 .avail .taken{border-color:var(--line);background:var(--grey-tint)}
-@media (max-width:560px){.dayback{padding:0;place-items:end stretch}.daydlg{width:100%;max-height:88vh;border-radius:16px 16px 0 0}.avail{grid-template-columns:1fr}}
+@media (max-width:560px){.dayback{padding:0;place-items:end stretch}.daydlg{width:100%;max-height:88vh;border-radius:16px 16px 0 0}.avail{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -541,13 +541,13 @@ input:disabled{opacity:.7}
           <label>Airbnb calendar link (ends in .ics)<input id="fd-url" inputmode="url" autocomplete="off" placeholder="https://www.airbnb.com/calendar/ical/....ics?s=..."></label>
           <div class="row">
             <label>Listing name<input id="fd-name" autocomplete="off" placeholder="e.g. Base Bush House"></label>
-            <label>Blocks which area<select id="fd-area"><option value="House">House & deck</option><option value="Conference">Conference</option><option value="Restaurant">Restaurant</option><option value="Entire venue">Entire venue</option></select></label>
+            <label>Blocks which area<select id="fd-area"><option value="House">House & deck</option><option value="Conference">Conference</option><option value="Restaurant">Restaurant</option><option value="Garden">Garden area</option><option value="Entire venue">Entire venue</option></select></label>
           </div>
           <div class="actions"><button type="submit" class="primary">Connect Airbnb listing</button><button type="button" id="syncNow">Sync now</button></div>
         </form>
         <div class="vsec" style="margin-top:14px">
           <h4>Your calendar link for Airbnb</h4>
-          <div class="copyrow"><select id="fx-area" aria-label="Area"><option value="House">House & deck</option><option value="Conference">Conference</option><option value="Restaurant">Restaurant</option><option value="Entire venue">Entire venue</option></select>
+          <div class="copyrow"><select id="fx-area" aria-label="Area"><option value="House">House & deck</option><option value="Conference">Conference</option><option value="Restaurant">Restaurant</option><option value="Garden">Garden area</option><option value="Entire venue">Entire venue</option></select>
             <input id="fx-url" readonly aria-label="Calendar link to paste into Airbnb"><button type="button" id="fx-copy">Copy</button></div>
           <ol class="steps"><li>In Airbnb: Calendar → pick the listing → Availability → Connect calendars → Connect to another website.</li>
             <li>Paste this link as the calendar address, name it "Base Bush Lounge", and add it.</li></ol>
@@ -561,7 +561,7 @@ input:disabled{opacity:.7}
   <header>
     <div>
       <h1>Bookings</h1>
-      <p class="sub">House & deck, Conference and Restaurant can each be booked separately on the same day.</p>
+      <p class="sub">House & deck, Conference, Restaurant and Garden area can each be booked separately on the same day.</p>
     </div>
     <div style="display:grid;gap:8px;justify-items:start">
       <div class="legend">
@@ -995,9 +995,9 @@ input:disabled{opacity:.7}
   if(navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(()=>{});
 
   const ENTIRE = "Entire venue";
-  const AREAS = ["House", "Conference", "Restaurant", ENTIRE];
+  const AREAS = ["House", "Conference", "Restaurant", "Garden", ENTIRE];
   // The deck comes with the house; "Entire venue" takes all three areas.
-  const AREA_LABEL = {House:"House & deck", Conference:"Conference", Restaurant:"Restaurant", [ENTIRE]:"Entire venue (House, Conference & Restaurant)"};
+  const AREA_LABEL = {House:"House & deck", Conference:"Conference", Restaurant:"Restaurant", Garden:"Garden area", [ENTIRE]:"Entire venue (House, Conference, Restaurant & Garden)"};
   const areaName = a => a===ENTIRE ? "Entire venue" : (AREA_LABEL[a] || a);
   const areaOptions = `<option value="" disabled>Choose an area…</option>` + AREAS.map(a=>`<option value="${esc(a)}">${esc(AREA_LABEL[a])}</option>`).join("");
   const SESS = {full:"Full day", day:"Daytime", evening:"Evening"};
@@ -1149,7 +1149,7 @@ input:disabled{opacity:.7}
     const live = list.filter(b=>b.status!=="cancelled");
     $("dayDlgSub").textContent = live.length ? `${live.length} booking${live.length===1?"":"s"} on this day` : "No bookings on this day";
     // What's still free in each area (quoted/confirmed hold an area; Entire venue holds all three)
-    $("dayAvail").innerHTML = ["House","Conference","Restaurant"].map(a=>{
+    $("dayAvail").innerHTML = ["House","Conference","Restaurant","Garden"].map(a=>{
       const here = live.filter(b=>b.area===a || b.area===ENTIRE);
       const hold = here.filter(b=>HOLDS(b.status));
       const cls = hold.some(b=>b.status==="confirmed") ? "taken" : hold.length ? "held" : "free";
@@ -1502,7 +1502,7 @@ input:disabled{opacity:.7}
   function renderHome(){
     const h = new Date().getHours();
     $("greet").textContent = (h<12?"Good morning":h<17?"Good afternoon":"Good evening");
-    $("hhDate").textContent = new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"}) + " · House, Conference and Restaurant";
+    $("hhDate").textContent = new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"}) + " · House, Conference, Restaurant and Garden";
     const today = iso(new Date()), wk = new Date(); wk.setDate(wk.getDate()+7); const wkEnd = iso(wk);
     const live = bookings.filter(b=>b.status!=="cancelled");
     $("t-upcoming").textContent = live.filter(b=>b.end>=today).length;
