@@ -289,6 +289,12 @@ input:disabled{opacity:.7}
 .paybox{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .paybox input{width:140px}
 .paybox select{width:auto}
+@media screen{#idoc{position:relative}}
+.qdoc .paidstamp{position:absolute;top:34px;left:34%;transform:rotate(-12deg);border:4px double #1f7a3f;color:#1f7a3f;border-radius:10px;padding:8px 22px 6px;text-align:center;
+  font-weight:800;letter-spacing:.14em;line-height:1;opacity:.82;pointer-events:none;-webkit-print-color-adjust:exact;print-color-adjust:exact;background:rgba(255,255,255,.35)}
+.qdoc .paidstamp .w{font-size:44px}
+.qdoc .paidstamp .d{font-size:11px;letter-spacing:.08em;margin-top:5px;font-weight:700}
+@media (max-width:560px){.qdoc .paidstamp{top:26px;left:30%}.qdoc .paidstamp .w{font-size:30px}}
 .paylist{display:grid;gap:4px;font-size:13px}
 .paylist .pr{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card)}
 .paylist .pr .a{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:600}
@@ -2147,7 +2153,13 @@ input:disabled{opacity:.7}
     const prev = revs.find(x=>x.revision===i.revision-1);
     const isCurrent = i.status==="current";
     const evq = {...q, start_date:q.start_date||i.invoice_date, end_date:q.end_date||i.invoice_date};
-    $("idoc").innerHTML = `
+    // PAID stamp: latest revision, fully paid. Date = the payment that settled it.
+    let paidOn = null;
+    if(isCurrent && Number(i.total) > 0 && bal <= 0.005){
+      let run = 0; for(const p of (b ? payments.filter(x=>x.booking_id===b.id) : []).slice().sort((x,y)=>x.paid_on.localeCompare(y.paid_on))){ run += Number(p.amount); if(run + 0.005 >= Number(i.total)){ paidOn = p.paid_on; break; } }
+      paidOn = paidOn || todayISO();
+    }
+    $("idoc").innerHTML = (paidOn ? `<div class="paidstamp" aria-label="Paid in full"><div class="w">PAID</div><div class="d">IN FULL · ${paidOn.split("-").reverse().join("/")}</div></div>` : "") + `
       <div class="qtop"><img src="logo.png" alt="Base Bush Lounge">
         <div class="qno">${i.revision>1?`<div class="tag">AMENDED INVOICE · REVISION ${i.revision}</div>`:""}<h2>INVOICE NO: ${esc(i.invoice_no)}</h2>
           <div><b>QUOTE REF: ${esc(q.quote_no||"")}</b></div>${q.client_ref?`<div><b>CLIENT REF: ${esc(q.client_ref)}</b></div>`:""}
