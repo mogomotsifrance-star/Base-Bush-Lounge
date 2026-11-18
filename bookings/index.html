@@ -274,6 +274,12 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
   :root{padding:0}
   body *{visibility:hidden}
   #qdoc,#qdoc *,#idoc,#idoc *,#cdoc,#cdoc *,#sdoc,#sdoc *{visibility:visible}
+  body.rprint #reportsView,body.rprint #reportsView *{visibility:visible}
+  body.rprint #reportsView{position:absolute;left:0;top:0;width:100%;display:grid;gap:12px}
+  body.rprint .noprint,body.rprint #reportsView > header{display:none!important}
+  body.rprint .ptitle{display:block;margin:0;font-family:var(--display)}
+  body.rprint .panel,body.rprint .kpi{break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body.rprint .tablewrap{overflow:visible}
   #qdoc,#idoc,#cdoc,#sdoc{position:absolute;left:0;top:0;width:100%;min-height:0;box-shadow:none;padding:0}
   .docwrap{overflow:visible}
 }
@@ -336,6 +342,51 @@ input:disabled{opacity:.7}
 .t-book{--c:var(--leaf);--ct:var(--leaf-tint)}
 .t-quote{--c:var(--ochre);--ct:var(--ochre-tint)}
 .t-inv{--c:var(--slate);--ct:var(--slate-tint)}
+.t-rep{--c:var(--plum);--ct:var(--plum-tint)}
+:root{--plum:#7b3f6e;--plum-tint:#f1e3ee;--plum-a:#3d1836;--plum-b:#7b3f6e;--pos:#2f7a4a;--neg:#b23a2e}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--plum:#d39bc6;--plum-tint:#33202f;--plum-a:#24101f;--plum-b:#4d2445;--pos:#7fc79a;--neg:#ec8b80}}
+:root[data-theme="dark"]{--plum:#d39bc6;--plum-tint:#33202f;--plum-a:#24101f;--plum-b:#4d2445;--pos:#7fc79a;--neg:#ec8b80}
+#reportsView{--c:var(--plum);--ct:var(--plum-tint)}
+#reportsView > header{position:relative;overflow:hidden;padding:clamp(18px,3vw,30px);border-radius:16px;color:#fff;align-items:center;
+  background:radial-gradient(120% 160% at 100% 0%,rgba(217,164,65,.30) 0%,rgba(217,164,65,0) 50%),linear-gradient(135deg,var(--plum-a) 0%,var(--plum-b) 100%)}
+#reportsView > header::after{content:"";position:absolute;inset:auto 0 0 0;height:4px;background:linear-gradient(90deg,var(--gold),var(--ochre) 40%,var(--slate) 75%,var(--hero-b))}
+#reportsView > header .sub{color:rgba(255,255,255,.85)}
+.rbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.rnav{display:flex;gap:6px;align-items:center}
+.rnav b{min-width:170px;text-align:center;font-family:var(--display);font-size:15px}
+.rnav button{min-width:38px}
+.rk .kpi .d{font-size:12px;font-weight:600}
+.rk .kpi .d.up{color:var(--pos)} .rk .kpi .d.down{color:var(--neg)}
+.rk .k-rev{--c:var(--slate)} .rk .k-cost{--c:var(--ochre)} .rk .k-gp{--c:var(--leaf)} .rk .k-oh{--c:var(--ochre)} .rk .k-net{--c:var(--plum)} .rk .k-cash{--c:var(--leaf)} .rk .k-pipe{--c:var(--slate)} .rk .k-owed{--c:var(--amber)}
+.rk .kpi b.neg{color:var(--neg)}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:16px}
+.hbars{display:grid;gap:8px;margin-top:8px}
+.hbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;font-size:13px}
+.hbar .t{background:var(--bg);border-radius:4px;height:8px;grid-column:1 / -1;overflow:hidden}
+.hbar .t i{display:block;height:100%;border-radius:4px;background:var(--c,var(--plum))}
+.hbar .v{font-variant-numeric:tabular-nums;font-weight:600}
+.hbar .v small{color:var(--muted);font-weight:500;margin-left:4px}
+.rlegend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.rlegend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+#rChart svg{width:100%;height:auto;display:block;margin-top:8px}
+#rChart .gl{stroke:var(--line);stroke-width:1}
+#rChart .z{stroke:var(--muted);stroke-width:1}
+#rChart text{fill:var(--muted);font-size:11px;font-family:var(--body)}
+#rChart .grp{cursor:pointer}
+#rChart .grp:hover .hl{opacity:1}
+#rChart .hl{fill:var(--plum-tint);opacity:0}
+#rChart .grp.sel .hl{opacity:1}
+#rChart .grp.sel text.xl{fill:var(--ink);font-weight:700}
+.btable td.pos{color:var(--pos)} .btable td.neg{color:var(--neg)}
+.btable tfoot td{font-weight:700;border-top:2px solid var(--line);border-bottom:0}
+.btable tr.click{cursor:pointer}
+.btable tr.click:hover td{background:var(--bg)}
+.jcform{display:grid;grid-template-columns:130px minmax(0,1fr) minmax(0,1.2fr) 110px auto;gap:6px;align-items:center}
+@media (max-width:700px){.jcform{grid-template-columns:1fr 1fr}.jcform button{grid-column:1 / -1}}
+#vBody .jcform{grid-template-columns:1fr 1fr}
+#vBody .jcform #jcDesc{grid-column:1 / -1}
+#vBody .jcform button{grid-column:1 / -1}
+.ptitle{display:none}
 .t-head{display:flex;align-items:center;gap:10px}
 .t-head .eyebrow{margin:0;color:var(--c);font-weight:600}
 .t-icon{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:var(--c)}
@@ -497,6 +548,7 @@ input:disabled{opacity:.7}
       <a href="#bookings" data-nav="bookings">Bookings</a>
       <a href="#quotes" data-nav="quotes">Quotes</a>
       <a href="#invoices" data-nav="invoices">Invoices</a>
+      <a href="#reports" data-nav="reports" id="navReports" hidden>Reports</a>
     </div>
     <div class="topbar"><span id="who"></span><button id="signOut">Sign out</button></div>
   </nav>
@@ -533,6 +585,12 @@ input:disabled{opacity:.7}
         <h2>Invoices</h2>
         <p class="sub">Invoice confirmed quotes, record payments, and send an amended invoice when the client adds items.</p>
         <div class="tilefoot"><span><span class="big" id="t-due">0</span>with a balance due</span><span class="go">Open invoices →</span></div>
+      </a>
+      <a class="tile t-rep" href="#reports" id="tileReports" hidden>
+        <div class="t-head"><span class="t-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16"/><path d="M6 16v-5M10 16V8M14 16v-3M18 16V5"/></svg></span><p class="eyebrow">Supervisors</p></div>
+        <h2>Reports</h2>
+        <p class="sub">Weekly, monthly and annual performance: revenue, job costs, overheads and profit.</p>
+        <div class="tilefoot"><span><span class="big" id="t-net">P 0</span>net profit this month</span><span class="go">Open reports →</span></div>
       </a>
     </div>
     <div class="kpis">
@@ -1007,6 +1065,61 @@ input:disabled{opacity:.7}
       <div class="docwrap"><div class="qdoc" id="sdoc"></div></div>
     </div>
   </div><!-- /invoicesView -->
+
+  <!-- ===== Reports (supervisors) ===== -->
+  <div class="view" id="reportsView" hidden>
+    <header>
+      <div><h1>Reports</h1><p class="sub">Performance, trends and profitability. Revenue counts confirmed events by event date; profit takes off each job's costs and the monthly overheads.</p></div>
+    </header>
+    <section class="panel rbar noprint">
+      <div class="tabs" role="tablist" id="rtabs">
+        <button type="button" role="tab" data-rp="week" aria-selected="false">Weekly</button>
+        <button type="button" role="tab" data-rp="month" aria-selected="true">Monthly</button>
+        <button type="button" role="tab" data-rp="year" aria-selected="false">Annual</button>
+      </div>
+      <div class="rnav"><button type="button" id="rPrev" aria-label="Previous period">‹</button><b id="rLabel">—</b><button type="button" id="rNext" aria-label="Next period">›</button><button type="button" class="ghost" id="rNow">Current</button></div>
+      <span style="flex:1"></span>
+      <button type="button" id="rCsv">Export CSV</button>
+      <button type="button" class="primary" id="rPrint">Print / save PDF</button>
+    </section>
+    <h2 class="ptitle" id="rPrintTitle">Base Bush Lounge report</h2>
+    <div class="kpis rk" id="rKpis"></div>
+    <section class="panel">
+      <div class="list-head"><div><p class="eyebrow">Trend</p><h3 id="rTrendTitle">Trend</h3></div>
+        <div class="rlegend"><span><i style="background:var(--slate)"></i>Revenue</span><span><i style="background:var(--ochre)"></i>Costs (job + overheads)</span><span><i style="background:var(--plum);border-radius:50%"></i>Net profit</span></div></div>
+      <div id="rChart"></div>
+      <p class="hint noprint" style="margin:6px 0 0">Click a period on the chart to open it.</p>
+    </section>
+    <div class="rgrid">
+      <section class="panel" style="--c:var(--slate)"><p class="eyebrow">Revenue by</p><h3>Category</h3><div class="hbars" id="rByCat"></div></section>
+      <section class="panel" style="--c:var(--leaf)"><p class="eyebrow">Revenue by</p><h3>Area</h3><div class="hbars" id="rByArea"></div></section>
+      <section class="panel" style="--c:var(--gold)"><p class="eyebrow">Revenue by</p><h3>Event type</h3><div class="hbars" id="rByType"></div></section>
+      <section class="panel" style="--c:var(--ochre)"><p class="eyebrow">Where the money went</p><h3>Costs</h3><div class="hbars" id="rCosts"></div></section>
+    </div>
+    <section class="panel list-panel">
+      <div class="list-head"><div><p class="eyebrow">Profit per job</p><h3>Jobs in this period</h3></div></div>
+      <div class="tablewrap">
+        <table class="btable">
+          <thead><tr><th>Date</th><th>Client · event</th><th>Area</th><th class="num">Revenue</th><th class="num">Job costs</th><th class="num">Profit</th><th class="num">Margin</th><th class="num">Balance owed</th></tr></thead>
+          <tbody id="rJobs"></tbody><tfoot id="rJobsFoot"></tfoot>
+        </table>
+      </div>
+      <p class="hint" id="rJobsHint" style="margin:8px 0 0"></p>
+    </section>
+    <section class="panel noprint" id="ohPanel">
+      <div class="list-head"><div><p class="eyebrow">Supervisors only</p><h3>Monthly overheads</h3></div>
+        <div class="rnav"><button type="button" id="ohPrev" aria-label="Previous month">‹</button><input type="month" id="ohMonth" aria-label="Month" style="width:auto"><button type="button" id="ohNext" aria-label="Next month">›</button></div></div>
+      <p class="hint">Running costs that don't belong to one job: salaries, rent, electricity, water, internet, maintenance, marketing and so on. Weekly reports take a share of the month by number of days.</p>
+      <div class="paylist" id="ohList"></div>
+      <form class="jcform" id="ohForm" novalidate style="margin-top:10px;grid-template-columns:180px minmax(0,1fr) 120px auto">
+        <select id="ohCat" aria-label="Category"></select>
+        <input id="ohDesc" placeholder="Description (optional)" aria-label="Description">
+        <input type="number" id="ohAmt" step="0.01" min="0" inputmode="decimal" class="money" placeholder="Amount (P)" aria-label="Amount (P)">
+        <button type="submit" class="primary" id="ohSave">Add overhead</button>
+      </form>
+      <div class="actions" style="margin-top:10px"><button type="button" id="ohCopy">Copy last month's overheads</button><span class="spacer"></span><span class="meta" id="ohTotal"></span></div>
+    </section>
+  </div><!-- /reportsView -->
 </div>
 <div class="dayback" id="dayBack" hidden>
   <div class="daydlg" role="dialog" aria-modal="true" aria-labelledby="dayDlgTitle">
@@ -1046,7 +1159,7 @@ input:disabled{opacity:.7}
   const $ = id => document.getElementById(id);
   const mobile = () => matchMedia("(max-width:860px)").matches;
 
-  let bookings = [], clients = [], staff = [], me = null, isAdmin = false, quotes = [], prices = [], invoices = [], payments = [];
+  let bookings = [], clients = [], staff = [], me = null, isAdmin = false, quotes = [], prices = [], invoices = [], payments = [], jobCosts = [], overheads = [];
   const now = new Date();
   let view = new Date(now.getFullYear(), now.getMonth(), 1);
   let selected = iso(now);
@@ -1088,16 +1201,18 @@ input:disabled{opacity:.7}
   }
   let rawBookings = [];
   async function loadAll(){
-    const [cb, bb, qb, pb, ib, yb] = await Promise.all([
+    const [cb, bb, qb, pb, ib, yb, jb, ob] = await Promise.all([
       sb.from("clients").select("*").order("name"),
       sb.from("bookings").select("*").order("start_date"),
       sb.from("quotes").select("*").order("created_at", {ascending:false}),
       sb.from("price_list").select("*").order("sort"),
       sb.from("invoices").select("*").order("created_at", {ascending:false}),
-      sb.from("payments").select("*").order("paid_on")
+      sb.from("payments").select("*").order("paid_on"),
+      sb.from("job_costs").select("*").order("cost_date"),
+      sb.from("overheads").select("*").order("month")
     ]);
     if(cb.error || bb.error || qb.error || pb.error || ib.error){ notice("Couldn't load your data. Check your connection and reload."); return; }
-    clients = cb.data; quotes = qb.data; prices = pb.data; invoices = ib.data; payments = yb.error ? [] : (yb.data||[]); rawBookings = bb.data; bookings = rawBookings.map(mapBooking);
+    clients = cb.data; quotes = qb.data; prices = pb.data; invoices = ib.data; payments = yb.error ? [] : (yb.data||[]); jobCosts = jb.error ? [] : (jb.data||[]); overheads = ob.error ? [] : (ob.data||[]); rawBookings = bb.data; bookings = rawBookings.map(mapBooking);
     notice(""); render(); if(!$("formPanel").hidden) liveCheck();
     if(dayOpen && !$("dayBack").hidden) openDay(dayOpen, true);
     if(viewId && !$("viewPanel").hidden){ const vb = bookings.find(x=>x.id===viewId); if(vb) openView(vb, true); else closeView(); } if(!$("qEditView").hidden) qCheck();
@@ -1277,7 +1392,7 @@ input:disabled{opacity:.7}
   $("listSearch").addEventListener("input", renderList);
   $("listWhen").addEventListener("change", renderList);
 
-  function render(){ renderCal(); renderDay(); renderUpcoming(); renderClients(); renderList(); renderHome(); renderQuotes(); renderPrices(); renderInvoices(); }
+  function render(){ renderCal(); renderDay(); renderUpcoming(); renderClients(); renderList(); renderHome(); renderQuotes(); renderPrices(); renderInvoices(); renderReports(); }
 
   // ---------- form ----------
   function readForm(){
@@ -1345,7 +1460,8 @@ input:disabled{opacity:.7}
       <div class="vsec"><h4>Money</h4><div class="vmoney">
         <div><span class="meta">Total</span><b>${pula(total)}</b></div><div><span class="meta">Paid</span><b>${pula(b.deposit)}</b></div><div><span class="meta">Balance</span><b>${pula(bal)}</b></div>
       </div>${total && b.status!=="cancelled" && b.deposit < total/2 ? `<p class="hint warn" style="margin:4px 0 0">50% deposit is ${pula(total/2)}; ${pula(total/2-b.deposit)} still to collect.</p>` : ""}</div>
-      ${b.notes ? `<div class="vsec"><h4>Notes</h4><p class="vnotes">${esc(b.notes)}</p></div>` : ""}`;
+      ${b.notes ? `<div class="vsec"><h4>Notes</h4><p class="vnotes">${esc(b.notes)}</p></div>` : ""}
+      ${jobCostSection(b)}`;
     $("vQuote").textContent = b.quoteId ? `Open quote ${b.quoteNo}` : "Create quote";
     if(!quiet) $("vDelConfirm").hidden = true;
     $("vDel").hidden = (!!b.quoteId || !!inv) && !isAdmin;
@@ -1565,16 +1681,254 @@ input:disabled{opacity:.7}
       <span class="pill ${b.status}">${stLabel(b)}</span></button>`).join("") : `<div class="empty">Nothing booked for the next 7 days.</div>`;
   }
 
+
+  // ================= JOB COSTS, OVERHEADS & REPORTS =================
+  const JOB_COST_CATS = ["Food & ingredients","Drinks stock","Staff & casual wages","Décor & equipment hire","Entertainment / DJ","Transport & fuel","Cleaning & laundry","Gas & electricity","Commission","Other"];
+  const OH_CATS = ["Salaries & wages","Rent / lease","Electricity","Water","Internet & phone","Fuel & transport","Repairs & maintenance","Marketing & advertising","Insurance","Bank charges","Licences & permits","Security","Accounting & admin","Loan repayments","Other"];
+  const r2 = n => Math.round(n*100)/100;
+  const pct = (n,d) => d ? Math.round(n/d*100) + "%" : "—";
+  const jobInvoice = b => invoices.find(i=>i.booking_id===b.id && i.status==="current");
+  const jobRevenue = b => { const inv = jobInvoice(b); return inv ? Number(inv.total) : Number(b.total||0); };
+  const jobCostTotal = id => r2(jobCosts.filter(c=>c.booking_id===id).reduce((a,c)=>a+Number(c.amount),0));
+  const jobItems = b => { const inv = jobInvoice(b); if(inv) return inv.items||[]; const q = quotes.find(x=>x.id===b.quoteId); return q ? (q.items||[]) : []; };
+
+  function jobCostSection(b){
+    const rows = jobCosts.filter(c=>c.booking_id===b.id);
+    const rev = jobRevenue(b), cost = jobCostTotal(b.id), prof = r2(rev-cost);
+    return `<div class="vsec" id="jcSec"><h4>Job costs &amp; profit</h4>
+      <div class="vmoney"><div><span class="meta">Revenue</span><b>${pula(rev)}</b></div><div><span class="meta">Job costs</span><b>${pula(cost)}</b></div>
+        <div><span class="meta">Profit${rev?` · ${pct(prof,rev)}`:""}</span><b style="color:${prof<0?"var(--neg)":"var(--pos)"}">${prof<0?"−":""}${pula(Math.abs(prof))}</b></div></div>
+      <div class="paylist">${rows.map(c=>`<div class="pr"><span>${nice(c.cost_date,{day:"numeric",month:"short"})}</span><span>${esc(c.category)}${c.description?` · ${esc(c.description)}`:""}</span><span class="a">P ${qm(c.amount)}</span><button type="button" class="ghost" data-rmjc="${esc(c.id)}" aria-label="Remove cost">✕</button></div>`).join("") || `<p class="hint" style="margin:0">No costs captured yet. Add what this job cost you (food, drinks stock, casual staff, hire, transport…) to see its profit.</p>`}</div>
+      <form class="jcform" id="jcForm" novalidate>
+        <input type="date" id="jcDate" value="${esc(b.start)}" aria-label="Date">
+        <select id="jcCat" aria-label="Category">${JOB_COST_CATS.map(c=>`<option>${esc(c)}</option>`).join("")}</select>
+        <input id="jcDesc" placeholder="Description (optional)" aria-label="Description">
+        <input type="number" id="jcAmt" step="0.01" min="0" inputmode="decimal" class="money" placeholder="Amount (P)" aria-label="Amount (P)">
+        <button type="submit" id="jcSave">Add cost</button>
+      </form></div>`;
+  }
+  $("vBody").addEventListener("submit", async e=>{
+    if(e.target.id!=="jcForm") return; e.preventDefault();
+    const amt = r2(Number($("jcAmt").value||0)); if(!(amt>0)){ toast("Enter the cost amount."); $("jcAmt").focus(); return; }
+    $("jcSave").disabled = true;
+    const r = await sb.from("job_costs").insert({booking_id:viewId, cost_date:$("jcDate").value || todayISO(), category:$("jcCat").value, description:$("jcDesc").value.trim()||null, amount:amt});
+    if($("jcSave")) $("jcSave").disabled = false;
+    toast(r.error ? "Couldn't save: "+r.error.message : `Cost of P ${qm(amt)} added`); if(!r.error) await loadAll();
+  });
+  $("vBody").addEventListener("click", async e=>{
+    const x = e.target.closest("[data-rmjc]"); if(!x) return;
+    const c = jobCosts.find(y=>y.id===x.dataset.rmjc); if(!c || !confirm(`Remove the ${c.category} cost of P ${qm(c.amount)}?`)) return;
+    const r = await sb.from("job_costs").delete().eq("id", c.id);
+    toast(r.error ? "Couldn't remove: "+r.error.message : "Cost removed"); if(!r.error) await loadAll();
+  });
+
+  // ---- periods ----
+  let rPeriod = "month", rAnchor = new Date();
+  const dayMs = 86400000;
+  const isoDays = (a,b) => Math.round((Date.UTC(...b.split("-").map((n,i)=>i===1?n-1:+n)) - Date.UTC(...a.split("-").map((n,i)=>i===1?n-1:+n)))/dayMs) + 1;
+  function periodRange(kind, anchor){
+    const d = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate());
+    if(kind==="week"){ const s = new Date(d); s.setDate(d.getDate() - (d.getDay()+6)%7); const e = new Date(s); e.setDate(s.getDate()+6);
+      const S = iso(s), E = iso(e);
+      return {start:S, end:E, label:`${nice(S,{day:"numeric",month:"short"})} – ${nice(E,{day:"numeric",month:"short",year:"numeric"})}`, short:nice(S,{day:"numeric",month:"short"})}; }
+    if(kind==="month"){ const s = new Date(d.getFullYear(), d.getMonth(), 1), e = new Date(d.getFullYear(), d.getMonth()+1, 0);
+      return {start:iso(s), end:iso(e), label:s.toLocaleDateString("en-GB",{month:"long",year:"numeric"}), short:s.toLocaleDateString("en-GB",{month:"short"}) + (s.getMonth()===0?" "+String(s.getFullYear()).slice(2):"")}; }
+    const y = d.getFullYear(); return {start:`${y}-01-01`, end:`${y}-12-31`, label:String(y), short:String(y)};
+  }
+  function shiftAnchor(kind, anchor, n){
+    const d = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate());
+    if(kind==="week") d.setDate(d.getDate()+7*n); else if(kind==="month"){ d.setDate(1); d.setMonth(d.getMonth()+n); } else d.setFullYear(d.getFullYear()+n);
+    return d;
+  }
+  function overheadsIn(start, end){
+    const by = {};
+    overheads.forEach(o=>{
+      const ms = o.month, me = iso(new Date(+ms.slice(0,4), +ms.slice(5,7), 0));
+      const s = ms > start ? ms : start, e = me < end ? me : end; if(s > e) return;
+      const share = Number(o.amount) * isoDays(s,e) / isoDays(ms,me);
+      by[o.category] = (by[o.category]||0) + share;
+    });
+    return by;
+  }
+  function itemCategory(desc){
+    const p = prices.find(x=>x.description===desc); if(p) return p.category;
+    const d = (desc||"").toLowerCase();
+    if(/venue|hire|conference|garden|deck/.test(d)) return "Venue hire";
+    if(/accommodation|chalet|room|night|house/.test(d)) return "Accommodation";
+    if(/corkage/.test(d)) return "Corkage";
+    if(/drink|beer|lager|wine|cider|cocktail|water|juice|soda|coffee|tea\b|champagne|brut|moët/.test(d)) return "Drinks";
+    if(/lunch|dinner|breakfast|buffet|braai|catering|canap|snack|dessert|menu|tea break/.test(d)) return "Catering";
+    return "Other";
+  }
+  function summarise(start, end){
+    const jobs = bookings.filter(b=>b.status==="confirmed" && b.start>=start && b.start<=end).sort((a,b)=>a.start.localeCompare(b.start)).map(b=>{
+      const rev = jobRevenue(b), cost = jobCostTotal(b.id);
+      return {b, rev, cost, prof:r2(rev-cost), owed:Math.max(0, r2(rev - Number(b.deposit||0))), hasCosts: jobCosts.some(c=>c.booking_id===b.id)};
+    });
+    const rev = r2(jobs.reduce((a,j)=>a+j.rev,0)), jc = r2(jobs.reduce((a,j)=>a+j.cost,0));
+    const ohBy = overheadsIn(start, end), oh = r2(Object.values(ohBy).reduce((a,v)=>a+v,0));
+    const costBy = {}; jobs.forEach(j=>jobCosts.filter(c=>c.booking_id===j.b.id).forEach(c=>{ costBy[c.category] = (costBy[c.category]||0) + Number(c.amount); }));
+    const cash = r2(payments.filter(p=>p.paid_on>=start && p.paid_on<=end).reduce((a,p)=>a+Number(p.amount),0));
+    const pipe = r2(bookings.filter(b=>b.status==="quoted" && b.source!=="airbnb" && b.start>=start && b.start<=end).reduce((a,b)=>a+jobRevenue(b),0));
+    const guests = jobs.reduce((a,j)=>a+(Number(j.b.guests)||0),0);
+    return {start, end, jobs, rev, jc, gp:r2(rev-jc), oh, ohBy, costBy, net:r2(rev-jc-oh), cash, pipe, guests, owed:r2(jobs.reduce((a,j)=>a+j.owed,0))};
+  }
+  const money = n => `${n<0?"−":""}${pula(Math.abs(n))}`;
+  function delta(cur, prev, label){
+    if(!prev && !cur) return `<span class="meta">No change vs ${esc(label)}</span>`;
+    if(!prev) return `<span class="d up">New vs ${esc(label)}</span>`;
+    const ch = (cur-prev)/Math.abs(prev)*100, up = ch >= 0;
+    return `<span class="d ${up?"up":"down"}">${up?"▲":"▼"} ${Math.abs(Math.round(ch))}% vs ${esc(label)}</span>`;
+  }
+  function hbars(entries, total){
+    entries = entries.filter(([,v])=>Math.abs(v)>0.005).sort((a,b)=>b[1]-a[1]);
+    if(!entries.length) return `<div class="empty">Nothing in this period.</div>`;
+    const max = Math.max(...entries.map(([,v])=>v));
+    return entries.map(([k,v])=>`<div class="hbar"><span>${esc(k)}</span><span class="v">${pula(v)}<small>${pct(v,total)}</small></span><span class="t"><i style="width:${Math.max(2,v/max*100)}%"></i></span></div>`).join("");
+  }
+  function trendChart(kind, anchor){
+    const n = kind==="week" ? 8 : kind==="month" ? 12 : 5;
+    const pts = []; for(let k=n-1;k>=0;k--){ const a = shiftAnchor(kind, anchor, -k), r = periodRange(kind, a), s = summarise(r.start, r.end); pts.push({a, r, s, cost:r2(s.jc+s.oh)}); }
+    const W = 760, H = 250, L = 56, R = 10, T = 12, B = 30, cw = (W-L-R)/n;
+    const hi = Math.max(1, ...pts.map(p=>Math.max(p.s.rev, p.cost, p.s.net))), lo = Math.min(0, ...pts.map(p=>p.s.net));
+    const step = (()=>{ const raw = (hi-lo)/4, mag = Math.pow(10, Math.floor(Math.log10(raw||1))); return [1,2,2.5,5,10].map(m=>m*mag).find(m=>m>=raw) || raw; })();
+    const top = Math.ceil(hi/step)*step, bot = Math.floor(lo/step)*step, y = v => T + (top-v)/(top-bot)*(H-T-B);
+    const fmt = v => Math.abs(v)>=1000 ? `P${(v/1000).toLocaleString("en-GB",{maximumFractionDigits:1})}k` : `P${v}`;
+    let g = ""; for(let v=bot; v<=top+1e-6; v+=step) g += `<line class="${v===0?"z":"gl"}" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end">${fmt(Math.round(v))}</text>`;
+    const bw = Math.min(26, cw*0.3);
+    const groups = pts.map((p,i)=>{ const cx = L + cw*i + cw/2, sel = i===n-1;
+      const bar = (v,x,col) => v>0 ? `<rect x="${x}" y="${y(v)}" width="${bw}" height="${Math.max(0.5,y(0)-y(v))}" rx="2" fill="${col}"/>` : "";
+      return `<g class="grp${sel?" sel":""}" data-ranchor="${iso(p.a)}" tabindex="0" role="button" aria-label="Open ${esc(p.r.label)}"><title>${esc(p.r.label)} — revenue ${pula(p.s.rev)}, costs ${pula(p.cost)}, net profit ${money(p.s.net)}</title>
+        <rect class="hl" x="${L+cw*i+2}" y="${T}" width="${cw-4}" height="${H-T-B}" rx="6"/>
+        ${bar(p.s.rev, cx-bw-1, "var(--slate)")}${bar(p.cost, cx+1, "var(--ochre)")}
+        <text class="xl" x="${cx}" y="${H-10}" text-anchor="middle">${esc(p.r.short)}</text></g>`; }).join("");
+    const line = pts.map((p,i)=>`${L+cw*i+cw/2},${y(p.s.net)}`).join(" ");
+    const dots = pts.map((p,i)=>`<circle cx="${L+cw*i+cw/2}" cy="${y(p.s.net)}" r="4" fill="var(--plum)" stroke="var(--surface)" stroke-width="2" pointer-events="none"/>`).join("");
+    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Revenue, costs and net profit for the last ${n} periods">${g}${groups}<polyline points="${line}" fill="none" stroke="var(--plum)" stroke-width="2.5" pointer-events="none"/>${dots}</svg>`;
+  }
+  function renderReports(){
+    if(!isAdmin) return;
+    const now = new Date(), mr = periodRange("month", now), ms = summarise(mr.start, mr.end);
+    $("t-net").textContent = money(ms.net);
+    if($("reportsView").hidden) return;
+    const r = periodRange(rPeriod, rAnchor), s = summarise(r.start, r.end);
+    const pr = periodRange(rPeriod, shiftAnchor(rPeriod, rAnchor, -1)), ps = summarise(pr.start, pr.end);
+    const word = {week:"week", month:"month", year:"year"}[rPeriod];
+    $("rLabel").textContent = r.label; $("rNow").textContent = `This ${word}`;
+    $("rPrintTitle").textContent = `Base Bush Lounge · ${({week:"Weekly",month:"Monthly",year:"Annual"})[rPeriod]} report · ${r.label}`;
+    $("rtabs").querySelectorAll("[data-rp]").forEach(t=>t.setAttribute("aria-selected", t.dataset.rp===rPeriod ? "true":"false"));
+    const plabel = pr.label;
+    const k = (cls, title, val, sub, neg) => `<div class="kpi ${cls}"><span class="meta">${title}</span><b${neg?' class="neg"':""}>${val}</b>${sub}</div>`;
+    $("rKpis").innerHTML =
+      k("k-rev","Revenue", pula(s.rev), `<span class="meta">${s.jobs.length} confirmed event${s.jobs.length===1?"":"s"}${s.guests?` · ${s.guests} guests`:""}</span>${delta(s.rev, ps.rev, plabel)}`) +
+      k("k-cost","Job costs", pula(s.jc), `<span class="meta">${pct(s.jc, s.rev)} of revenue</span>`) +
+      k("k-gp","Gross profit", money(s.gp), `<span class="meta">Margin ${pct(s.gp, s.rev)}</span>`, s.gp<0) +
+      k("k-oh","Overheads", pula(s.oh), `<span class="meta">${rPeriod==="week"?"Share of the month's overheads":"Monthly running costs"}</span>`) +
+      k("k-net","Net profit", money(s.net), `<span class="meta">Margin ${pct(s.net, s.rev)}</span>${delta(s.net, ps.net, plabel)}`, s.net<0) +
+      k("k-cash","Cash received", pula(s.cash), `<span class="meta">Payments dated in this ${word}</span>${delta(s.cash, ps.cash, plabel)}`) +
+      k("k-owed","Still owed on these events", pula(s.owed), `<span class="meta">Balances not yet paid</span>`) +
+      k("k-pipe","Pipeline (quoted)", pula(s.pipe), `<span class="meta">Sent quotes for events in this ${word}</span>`);
+    $("rTrendTitle").textContent = rPeriod==="week" ? "Last 8 weeks" : rPeriod==="month" ? "Last 12 months" : "Last 5 years";
+    $("rChart").innerHTML = trendChart(rPeriod, rAnchor);
+    // revenue by category (from invoice/quote line items, scaled so totals match revenue incl. VAT)
+    const byCat = {}; s.jobs.forEach(j=>{ const items = jobItems(j.b); const sub = items.reduce((a,i)=>a+Number(i.qty)*Number(i.unit_price),0);
+      if(!items.length || !sub){ byCat["Not itemised"] = (byCat["Not itemised"]||0) + j.rev; return; }
+      items.forEach(i=>{ const c = itemCategory(i.description); byCat[c] = (byCat[c]||0) + Number(i.qty)*Number(i.unit_price)/sub*j.rev; }); });
+    $("rByCat").innerHTML = hbars(Object.entries(byCat), s.rev);
+    const byArea = {}, byType = {}; s.jobs.forEach(j=>{ const a = areaName(j.b.area); byArea[a] = (byArea[a]||0) + j.rev; const t = j.b.source==="airbnb" ? "Airbnb stay" : (j.b.type||"Other"); byType[t] = (byType[t]||0) + j.rev; });
+    $("rByArea").innerHTML = hbars(Object.entries(byArea), s.rev);
+    $("rByType").innerHTML = hbars(Object.entries(byType), s.rev);
+    const costs = [...Object.entries(s.costBy).map(([k,v])=>[`${k} (jobs)`, v]), ...Object.entries(s.ohBy).map(([k,v])=>[`${k} (overhead)`, v])];
+    $("rCosts").innerHTML = hbars(costs, s.jc + s.oh);
+    // jobs table
+    const cls = n => n<0 ? "neg" : "pos";
+    $("rJobs").innerHTML = s.jobs.length ? s.jobs.map(j=>`<tr class="click" data-rjob="${esc(j.b.id)}" data-d="${j.b.start}">
+      <td style="white-space:nowrap">${nice(j.b.start,{day:"numeric",month:"short",year:rPeriod==="year"?undefined:"numeric"})}</td>
+      <td><strong>${esc(j.b.client)}</strong><div class="sub2">${esc(j.b.source==="airbnb"?"Airbnb stay":j.b.type)}${j.b.quoteNo?` · ${esc(j.b.quoteNo)}`:""}${j.hasCosts?"":` · <span class="pill due">No costs captured</span>`}</div></td>
+      <td>${esc(areaName(j.b.area))}</td><td class="num">${pula(j.rev)}</td><td class="num">${pula(j.cost)}</td>
+      <td class="num ${cls(j.prof)}">${money(j.prof)}</td><td class="num">${pct(j.prof, j.rev)}</td><td class="num">${j.owed?pula(j.owed):"—"}</td></tr>`).join("")
+      : `<tr><td colspan="8"><div class="empty">No confirmed events in this period.</div></td></tr>`;
+    $("rJobsFoot").innerHTML = s.jobs.length ? `<tr><td></td><td>Total · ${s.jobs.length} job${s.jobs.length===1?"":"s"}</td><td></td><td class="num">${pula(s.rev)}</td><td class="num">${pula(s.jc)}</td><td class="num ${cls(s.gp)}">${money(s.gp)}</td><td class="num">${pct(s.gp, s.rev)}</td><td class="num">${s.owed?pula(s.owed):"—"}</td></tr>
+      <tr><td></td><td>Less overheads</td><td></td><td></td><td class="num">${pula(s.oh)}</td><td></td><td></td><td></td></tr>
+      <tr><td></td><td>Net profit</td><td></td><td></td><td></td><td class="num ${cls(s.net)}">${money(s.net)}</td><td class="num">${pct(s.net, s.rev)}</td><td></td></tr>` : "";
+    const missing = s.jobs.filter(j=>!j.hasCosts).length;
+    $("rJobsHint").textContent = (missing ? `${missing} job${missing===1?" has":"s have"} no costs captured, so ${missing===1?"its":"their"} profit is overstated. Open the booking and add its costs. ` : "") + "Click a job to open the booking.";
+    renderOverheads();
+  }
+  $("rtabs").addEventListener("click", e=>{ const t = e.target.closest("[data-rp]"); if(!t) return; rPeriod = t.dataset.rp; renderReports(); });
+  $("rPrev").onclick = ()=>{ rAnchor = shiftAnchor(rPeriod, rAnchor, -1); renderReports(); };
+  $("rNext").onclick = ()=>{ rAnchor = shiftAnchor(rPeriod, rAnchor, 1); renderReports(); };
+  $("rNow").onclick = ()=>{ rAnchor = new Date(); renderReports(); };
+  $("rChart").addEventListener("click", e=>{ const g = e.target.closest("[data-ranchor]"); if(!g) return; rAnchor = parse(g.dataset.ranchor); renderReports(); });
+  $("rChart").addEventListener("keydown", e=>{ if(e.key!=="Enter" && e.key!==" ") return; const g = e.target.closest("[data-ranchor]"); if(!g) return; e.preventDefault(); rAnchor = parse(g.dataset.ranchor); renderReports(); });
+  $("rJobs").addEventListener("click", e=>{ const tr = e.target.closest("[data-rjob]"); if(!tr) return; const b = bookings.find(x=>x.id===tr.dataset.rjob); if(!b) return;
+    go("bookings"); setTimeout(()=>openView(b), 50); });
+  $("rPrint").onclick = ()=>{ document.body.classList.add("rprint"); window.print(); };
+  window.addEventListener("afterprint", ()=>document.body.classList.remove("rprint"));
+  $("rCsv").onclick = ()=>{
+    const r = periodRange(rPeriod, rAnchor), s = summarise(r.start, r.end);
+    const q = v => `"${String(v??"").replace(/"/g,'""')}"`, n = v => r2(v).toFixed(2);
+    const lines = [[`Base Bush Lounge ${({week:"weekly",month:"monthly",year:"annual"})[rPeriod]} report`, r.label].map(q).join(","), "",
+      ["Revenue",n(s.rev)],["Job costs",n(s.jc)],["Gross profit",n(s.gp)],["Overheads",n(s.oh)],["Net profit",n(s.net)],["Cash received",n(s.cash)],["Still owed",n(s.owed)],["Pipeline (quoted)",n(s.pipe)]].map(x=>Array.isArray(x)?x.map(q).join(","):x);
+    lines.push("", ["Date","Client","Event","Area","Quote","Invoice","Guests","Revenue","Job costs","Profit","Margin %","Paid","Balance owed"].map(q).join(","));
+    s.jobs.forEach(j=>{ const inv = jobInvoice(j.b); lines.push([j.b.start, j.b.client, j.b.source==="airbnb"?"Airbnb stay":j.b.type, areaName(j.b.area), j.b.quoteNo||"", inv?inv.invoice_no:"", j.b.guests??"", n(j.rev), n(j.cost), n(j.prof), j.rev?Math.round(j.prof/j.rev*100):"", n(j.b.deposit||0), n(j.owed)].map(q).join(",")); });
+    lines.push("", ["Cost","Category","Amount"].map(q).join(","));
+    Object.entries(s.costBy).forEach(([k,v])=>lines.push(["Job cost",k,n(v)].map(q).join(",")));
+    Object.entries(s.ohBy).forEach(([k,v])=>lines.push(["Overhead",k,n(v)].map(q).join(",")));
+    const blob = new Blob(["﻿"+lines.join("\r\n")], {type:"text/csv;charset=utf-8"}), a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = `BBL report ${r.label.replace(/[^\w –-]/g,"")}.csv`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+  };
+
+  // ---- overheads manager ----
+  $("ohCat").innerHTML = OH_CATS.map(c=>`<option>${esc(c)}</option>`).join("");
+  const ohMonthISO = () => ($("ohMonth").value || todayISO().slice(0,7)) + "-01";
+  function renderOverheads(){
+    if(!$("ohMonth").value) $("ohMonth").value = periodRange("month", rAnchor).start.slice(0,7);
+    const m = ohMonthISO(), rows = overheads.filter(o=>o.month===m);
+    const label = parse(m).toLocaleDateString("en-GB",{month:"long",year:"numeric"});
+    $("ohList").innerHTML = rows.map(o=>`<div class="pr"><span><b>${esc(o.category)}</b></span><span>${esc(o.description||"")}</span><span class="a">P ${qm(o.amount)}</span><button type="button" class="ghost" data-rmoh="${esc(o.id)}" aria-label="Remove overhead">✕</button></div>`).join("")
+      || `<p class="hint" style="margin:0">No overheads captured for ${esc(label)}.</p>`;
+    $("ohTotal").textContent = `Total for ${label}: P ${qm(rows.reduce((a,o)=>a+Number(o.amount),0))}`;
+    const prev = iso(new Date(+m.slice(0,4), +m.slice(5,7)-2, 1));
+    $("ohCopy").disabled = !overheads.some(o=>o.month===prev);
+  }
+  $("ohMonth").addEventListener("change", renderOverheads);
+  const ohShift = n => { const m = ohMonthISO(); $("ohMonth").value = iso(new Date(+m.slice(0,4), +m.slice(5,7)-1+n, 1)).slice(0,7); renderOverheads(); };
+  $("ohPrev").onclick = ()=>ohShift(-1); $("ohNext").onclick = ()=>ohShift(1);
+  $("ohForm").addEventListener("submit", async e=>{
+    e.preventDefault(); const amt = r2(Number($("ohAmt").value||0)); if(!(amt>0)){ toast("Enter the amount."); $("ohAmt").focus(); return; }
+    $("ohSave").disabled = true;
+    const r = await sb.from("overheads").insert({month:ohMonthISO(), category:$("ohCat").value, description:$("ohDesc").value.trim()||null, amount:amt});
+    $("ohSave").disabled = false;
+    if(r.error){ toast("Couldn't save: "+r.error.message); return; }
+    toast(`${$("ohCat").value} P ${qm(amt)} added`); $("ohDesc").value = ""; $("ohAmt").value = ""; await loadAll();
+  });
+  $("ohList").addEventListener("click", async e=>{
+    const x = e.target.closest("[data-rmoh]"); if(!x) return; const o = overheads.find(y=>y.id===x.dataset.rmoh);
+    if(!o || !confirm(`Remove ${o.category} (P ${qm(o.amount)})?`)) return;
+    const r = await sb.from("overheads").delete().eq("id", o.id);
+    toast(r.error ? "Couldn't remove: "+r.error.message : "Overhead removed"); if(!r.error) await loadAll();
+  });
+  $("ohCopy").onclick = async ()=>{
+    const m = ohMonthISO(), prev = iso(new Date(+m.slice(0,4), +m.slice(5,7)-2, 1)), src = overheads.filter(o=>o.month===prev);
+    if(!src.length) return;
+    if(overheads.some(o=>o.month===m) && !confirm("This month already has overheads. Add last month's on top?")) return;
+    const r = await sb.from("overheads").insert(src.map(o=>({month:m, category:o.category, description:o.description, amount:o.amount})));
+    toast(r.error ? "Couldn't copy: "+r.error.message : `${src.length} overhead${src.length===1?"":"s"} copied — adjust any that changed`); if(!r.error) await loadAll();
+  };
+
   // ================= ROUTING =================
   function route(){
     const v = (location.hash||"#home").slice(1);
-    const view = ["home","bookings","quotes","invoices"].includes(v) ? v : "home";
-    $("homeView").hidden = view!=="home"; $("bookingsView").hidden = view!=="bookings"; $("quotesView").hidden = view!=="quotes"; $("invoicesView").hidden = view!=="invoices";
+    let view = ["home","bookings","quotes","invoices","reports"].includes(v) ? v : "home";
+    if(view==="reports" && !isAdmin) view = "home";
+    $("homeView").hidden = view!=="home"; $("bookingsView").hidden = view!=="bookings"; $("quotesView").hidden = view!=="quotes"; $("invoicesView").hidden = view!=="invoices"; $("reportsView").hidden = view!=="reports";
     document.querySelectorAll("[data-nav]").forEach(a=>a.setAttribute("aria-current", a.dataset.nav===view ? "page" : "false"));
     if(view!=="bookings"){ closeForm(); closeView(); closeDay(); }
     if(view==="quotes" && $("qEditView").hidden && $("qDocView").hidden && $("cDocView").hidden) showQList();
     if(view==="invoices" && $("iEditView").hidden && $("iDocView").hidden) showIList();
-    document.title = (view==="home" ? "" : ({bookings:"Bookings",quotes:"Quotes",invoices:"Invoices"})[view]+" · ") + "Base Bush Lounge";
+    if(view==="reports") renderReports();
+    document.title = (view==="home" ? "" : ({bookings:"Bookings",quotes:"Quotes",invoices:"Invoices",reports:"Reports"})[view]+" · ") + "Base Bush Lounge";
   }
   window.addEventListener("hashchange", ()=>{ route(); window.scrollTo(0,0); });
   const go = v => { if(location.hash!=="#"+v) location.hash = v; else route(); };
@@ -2381,6 +2735,7 @@ input:disabled{opacity:.7}
     show("appView"); $("who").textContent = me; route();
     isAdmin = !!(await sb.rpc("is_admin")).data;
     $("staffPanel").hidden = !isAdmin;
+    $("navReports").hidden = !isAdmin; $("tileReports").hidden = !isAdmin; if(!isAdmin && location.hash==="#reports") go("home"); else if(isAdmin && location.hash==="#reports") route();
     if(started) return; started = true;
     $("airbnbPanel").hidden = !isAdmin;
     render(); await loadAll(); if(isAdmin){ loadStaff(); loadFeeds(); }
@@ -2389,6 +2744,9 @@ input:disabled{opacity:.7}
       .on("postgres_changes",{event:"*",schema:"public",table:"clients"}, scheduleReload)
       .on("postgres_changes",{event:"*",schema:"public",table:"quotes"}, scheduleReload)
       .on("postgres_changes",{event:"*",schema:"public",table:"invoices"}, scheduleReload)
+      .on("postgres_changes",{event:"*",schema:"public",table:"payments"}, scheduleReload)
+      .on("postgres_changes",{event:"*",schema:"public",table:"job_costs"}, scheduleReload)
+      .on("postgres_changes",{event:"*",schema:"public",table:"overheads"}, scheduleReload)
       .on("postgres_changes",{event:"*",schema:"public",table:"calendar_feeds"}, ()=>{ if(isAdmin) loadFeeds(); })
       .subscribe();
     document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) scheduleReload(); });
