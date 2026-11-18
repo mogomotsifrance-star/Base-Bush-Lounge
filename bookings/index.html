@@ -273,8 +273,8 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
   html,body{background:#fff!important}
   :root{padding:0}
   body *{visibility:hidden}
-  #qdoc,#qdoc *,#idoc,#idoc *,#cdoc,#cdoc *{visibility:visible}
-  #qdoc,#idoc,#cdoc{position:absolute;left:0;top:0;width:100%;min-height:0;box-shadow:none;padding:0}
+  #qdoc,#qdoc *,#idoc,#idoc *,#cdoc,#cdoc *,#sdoc,#sdoc *{visibility:visible}
+  #qdoc,#idoc,#cdoc,#sdoc{position:absolute;left:0;top:0;width:100%;min-height:0;box-shadow:none;padding:0}
   .docwrap{overflow:visible}
 }
 .check{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);font-weight:500;cursor:pointer}
@@ -288,6 +288,21 @@ input:disabled{opacity:.7}
 .pill.super{background:var(--grey-tint);color:var(--muted)}
 .paybox{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .paybox input{width:140px}
+.paybox select{width:auto}
+.paylist{display:grid;gap:4px;font-size:13px}
+.paylist .pr{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+.paylist .pr .a{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:600}
+.paylist .pr button{padding:2px 8px;min-height:0}
+.qdoc table.stmt{width:100%;border-collapse:collapse;margin:0 0 16px;font-size:11.5px}
+.qdoc table.stmt th{background:#111;color:#fff;text-align:left;padding:6px 8px;font-weight:600}
+.qdoc table.stmt td{padding:6px 8px;border-bottom:1px solid #ddd;vertical-align:top}
+.qdoc table.stmt .r{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.qdoc table.stmt tfoot td{font-weight:700;border-top:1.5px solid #111;border-bottom:0}
+.qdoc .stmtsum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1.5px solid #111;margin:0 0 16px}
+.qdoc .stmtsum div{padding:8px 10px;border-right:1px solid #111;font-size:11px}
+.qdoc .stmtsum div:last-child{border-right:0;background:#111;color:#fff}
+.qdoc .stmtsum b{display:block;font-size:14px;margin-top:2px}
+@media (max-width:560px){.qdoc .stmtsum{grid-template-columns:1fr 1fr}.qdoc .stmtsum div:nth-child(2){border-right:0}.qdoc .stmtsum div:nth-child(-n+2){border-bottom:1px solid #111}}
 .revs{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--muted)}
 .revs button{padding:3px 9px;min-height:0;font-size:12.5px}
 .revs button[aria-pressed="true"]{border-color:var(--leaf);color:var(--leaf);font-weight:600}
@@ -956,18 +971,33 @@ input:disabled{opacity:.7}
         <button type="button" id="idQuote">View quote</button>
         <span style="flex:1"></span>
         <button type="button" id="idAmend">Amend invoice</button>
+        <button type="button" id="idStatement">Statement</button>
         <button type="button" class="primary" id="idPrint">Print / save PDF</button>
       </div>
       <div class="panel" style="display:grid;gap:10px">
         <div class="revs" id="idRevs"></div>
         <form class="paybox" id="payForm" novalidate>
-          <label for="payAmt" class="meta">Paid to date (P)</label>
-          <input type="number" id="payAmt" min="0" step="0.01" inputmode="decimal" class="money">
-          <button type="submit">Save payment</button>
+          <span class="meta"><b>Record a payment</b></span>
+          <input type="date" id="payDate" aria-label="Date paid">
+          <input type="number" id="payAmt" step="0.01" inputmode="decimal" class="money" placeholder="Amount (P)" aria-label="Amount (P)">
+          <select id="payMethod" aria-label="Payment method"><option>EFT</option><option>Cash</option><option>Card</option><option>Orange Money</option><option>MyZaka</option><option>Smega</option><option>Cheque</option></select>
+          <input id="payRef" placeholder="Reference (optional)" aria-label="Reference" style="width:170px">
+          <button type="submit" id="paySave">Add payment</button>
           <span class="meta" id="payNote"></span>
         </form>
+        <div class="paylist" id="payList"></div>
       </div>
       <div class="docwrap"><div class="qdoc" id="idoc"></div></div>
+    </div>
+
+    <!-- Statement of account -->
+    <div class="view" id="sDocView" hidden>
+      <div class="docbar">
+        <button type="button" id="sdBack">← Back to invoice</button>
+        <span style="flex:1"></span>
+        <button type="button" class="primary" id="sdPrint">Download / print statement (PDF)</button>
+      </div>
+      <div class="docwrap"><div class="qdoc" id="sdoc"></div></div>
     </div>
   </div><!-- /invoicesView -->
 </div>
@@ -1009,13 +1039,14 @@ input:disabled{opacity:.7}
   const $ = id => document.getElementById(id);
   const mobile = () => matchMedia("(max-width:860px)").matches;
 
-  let bookings = [], clients = [], staff = [], me = null, isAdmin = false, quotes = [], prices = [], invoices = [];
+  let bookings = [], clients = [], staff = [], me = null, isAdmin = false, quotes = [], prices = [], invoices = [], payments = [];
   const now = new Date();
   let view = new Date(now.getFullYear(), now.getMonth(), 1);
   let selected = iso(now);
   let editingId = null, clientId = null;
 
   function iso(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+  const todayISO = () => iso(new Date());
   function parse(s){ const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); }
   function nice(s,opt){ return parse(s).toLocaleDateString("en-GB", opt||{weekday:"long",day:"numeric",month:"long",year:"numeric"}); }
   function short(s){ return nice(s,{day:"numeric",month:"short"}); }
@@ -1050,20 +1081,22 @@ input:disabled{opacity:.7}
   }
   let rawBookings = [];
   async function loadAll(){
-    const [cb, bb, qb, pb, ib] = await Promise.all([
+    const [cb, bb, qb, pb, ib, yb] = await Promise.all([
       sb.from("clients").select("*").order("name"),
       sb.from("bookings").select("*").order("start_date"),
       sb.from("quotes").select("*").order("created_at", {ascending:false}),
       sb.from("price_list").select("*").order("sort"),
-      sb.from("invoices").select("*").order("created_at", {ascending:false})
+      sb.from("invoices").select("*").order("created_at", {ascending:false}),
+      sb.from("payments").select("*").order("paid_on")
     ]);
     if(cb.error || bb.error || qb.error || pb.error || ib.error){ notice("Couldn't load your data. Check your connection and reload."); return; }
-    clients = cb.data; quotes = qb.data; prices = pb.data; invoices = ib.data; rawBookings = bb.data; bookings = rawBookings.map(mapBooking);
+    clients = cb.data; quotes = qb.data; prices = pb.data; invoices = ib.data; payments = yb.error ? [] : (yb.data||[]); rawBookings = bb.data; bookings = rawBookings.map(mapBooking);
     notice(""); render(); if(!$("formPanel").hidden) liveCheck();
     if(dayOpen && !$("dayBack").hidden) openDay(dayOpen, true);
     if(viewId && !$("viewPanel").hidden){ const vb = bookings.find(x=>x.id===viewId); if(vb) openView(vb, true); else closeView(); } if(!$("qEditView").hidden) qCheck();
     if(!$("qDocView").hidden && docQuoteId) showDoc(docQuoteId, true);
     if(!$("iDocView").hidden && docInvId) showInvoice(docInvId, true);
+    if(!$("sDocView").hidden && docInvId) showStatement(docInvId, true);
   }
   let reloadT; const scheduleReload = ()=>{ clearTimeout(reloadT); reloadT = setTimeout(loadAll, 300); };
   // ---- Airbnb sync (supervisors) ----
@@ -2059,7 +2092,8 @@ input:disabled{opacity:.7}
   const invPaid = i => Number(invBooking(i)?.deposit || 0);
   const invBalance = i => Math.round((Number(i.total) - invPaid(i))*100)/100;
   const invQuote = i => quotes.find(q=>q.id===i.quote_id) || {};
-  function showIList(){ $("iListView").hidden=false; $("iEditView").hidden=true; $("iDocView").hidden=true; docInvId=null; iAmendingId=null; }
+  const canStatement = i => i.status==="current" && invPaid(i) > 0.005 && invBalance(i) > 0.005;
+  function showIList(){ $("iListView").hidden=false; $("iEditView").hidden=true; $("iDocView").hidden=true; $("sDocView").hidden=true; docInvId=null; iAmendingId=null; }
 
   function renderInvoices(){
     const q = $("iSearch").value.trim().toLowerCase();
@@ -2078,13 +2112,13 @@ input:disabled{opacity:.7}
       <td>${name(i)}</td><td style="white-space:nowrap">${invQuote(i).start_date ? esc(qDates(invQuote(i))) : "—"}</td>
       <td class="num">${pula(i.total)}</td><td class="num">${pula(invPaid(i))}</td><td class="num">${pula(Math.max(0,invBalance(i)))}</td>
       <td>${st(i)}</td>
-      <td style="white-space:nowrap"><button type="button" data-viewi="${esc(i.id)}">View</button> <button type="button" data-amendi="${esc(i.id)}">Amend</button></td></tr>`).join("")
+      <td style="white-space:nowrap"><button type="button" data-viewi="${esc(i.id)}">View</button> <button type="button" data-amendi="${esc(i.id)}">Amend</button>${canStatement(i)?` <button type="button" data-stmti="${esc(i.id)}">Statement</button>`:""}</td></tr>`).join("")
       : `<tr><td colspan="8">${empty}</td></tr>`;
     $("iCards").innerHTML = list.length ? list.map(i=>`<div class="bcard">
       <div class="top"><strong>${esc(i.invoice_no)} · ${name(i)}</strong>${st(i)}</div>
       <div class="meta">${i.revision>1?`Amended · rev ${i.revision}`:"Original"} · ${invQuote(i).start_date ? esc(qDates(invQuote(i))) : ""}</div>
       <div class="meta">Total ${pula(i.total)} · paid ${pula(invPaid(i))} · balance ${pula(Math.max(0,invBalance(i)))}</div>
-      <div class="actions"><button type="button" data-viewi="${esc(i.id)}">View</button><button type="button" data-amendi="${esc(i.id)}">Amend</button></div></div>`).join("") : empty;
+      <div class="actions"><button type="button" data-viewi="${esc(i.id)}">View</button><button type="button" data-amendi="${esc(i.id)}">Amend</button>${canStatement(i)?`<button type="button" data-stmti="${esc(i.id)}">Statement</button>`:""}</div></div>`).join("") : empty;
   }
   $("itabs").addEventListener("click", e=>{ const t=e.target.closest("[data-itab]"); if(!t) return; iTab=t.dataset.itab;
     $("itabs").querySelectorAll("[data-itab]").forEach(x=>x.setAttribute("aria-selected", x===t?"true":"false")); renderInvoices(); });
@@ -2105,7 +2139,7 @@ input:disabled{opacity:.7}
   function showInvoice(id, quiet){
     const i = invoices.find(x=>x.id===id); if(!i) return;
     docInvId = id;
-    $("iListView").hidden = true; $("iEditView").hidden = true; $("iDocView").hidden = false;
+    $("iListView").hidden = true; $("iEditView").hidden = true; $("sDocView").hidden = true; $("iDocView").hidden = false;
     const q = invQuote(i), c = clientById(i.client_id)||{}, b = invBooking(i);
     const paid = invPaid(i), bal = Math.round((Number(i.total)-paid)*100)/100;
     const revs = invoices.filter(x=>x.invoice_no===i.invoice_no).sort((a,b)=>a.revision-b.revision);
@@ -2137,16 +2171,80 @@ input:disabled{opacity:.7}
       : `<span>Original invoice · created ${nice(i.invoice_date,{day:"numeric",month:"short",year:"numeric"})}</span>`)
       + (isCurrent ? "" : ` <span class="pill super">Superseded. Send the latest revision to the client.</span>`);
     $("idAmend").hidden = !isCurrent; $("payForm").hidden = !b;
-    $("payAmt").value = paid || ""; 
-    $("payNote").textContent = b ? `Balance due ${pula(Math.max(0,bal))}${bal < -0.005 ? ` · overpaid by ${pula(-bal)}` : ""}` : "";
+    $("idStatement").hidden = !canStatement(i);
+    $("payAmt").value = ""; $("payRef").value = ""; $("payDate").value = todayISO();
+    $("payNote").textContent = b ? `Paid to date P ${qm(paid)} · balance due P ${qm(Math.max(0,bal))}${bal < -0.005 ? ` · overpaid by P ${qm(-bal)}` : ""}` : "";
+    const pays = b ? payments.filter(p=>p.booking_id===b.id) : [];
+    $("payList").innerHTML = pays.map(p=>`<div class="pr"><span>${nice(p.paid_on,{day:"numeric",month:"short",year:"numeric"})}</span><span>${esc(p.method||"Payment")}${p.reference?` · ${esc(p.reference)}`:""}</span><span class="a">${Number(p.amount)<0?"−":""}P ${qm(Math.abs(Number(p.amount)))}</span><button type="button" class="ghost" data-rmpay="${esc(p.id)}" aria-label="Remove payment">✕</button></div>`).join("");
     if(!quiet) window.scrollTo(0,0);
   }
   $("payForm").addEventListener("submit", async e=>{
     e.preventDefault();
     const i = invoices.find(x=>x.id===docInvId); if(!i?.booking_id) return;
-    const r = await sb.from("bookings").update({deposit: Number($("payAmt").value||0)}).eq("id", i.booking_id);
-    toast(r.error ? "Couldn't save: "+r.error.message : "Payment saved"); if(!r.error){ await loadAll(); showInvoice(i.id, true); }
+    const amt = Math.round(Number($("payAmt").value||0)*100)/100;
+    if(!amt){ toast("Enter the amount paid."); $("payAmt").focus(); return; }
+    $("paySave").disabled = true;
+    const r = await sb.from("payments").insert({booking_id:i.booking_id, paid_on:$("payDate").value || todayISO(), amount:amt,
+      method:$("payMethod").value, reference:$("payRef").value.trim() || null});
+    $("paySave").disabled = false;
+    toast(r.error ? "Couldn't save: "+r.error.message : `Payment of ${pula(amt)} recorded`); if(!r.error){ await loadAll(); showInvoice(i.id, true); }
   });
+  $("payList").addEventListener("click", async e=>{
+    const x = e.target.closest("[data-rmpay]"); if(!x) return;
+    const p = payments.find(y=>y.id===x.dataset.rmpay); if(!p) return;
+    if(!confirm(`Remove the ${pula(Math.abs(Number(p.amount)))} payment of ${nice(p.paid_on,{day:"numeric",month:"short",year:"numeric"})}?`)) return;
+    const r = await sb.from("payments").delete().eq("id", p.id);
+    toast(r.error ? "Couldn't remove: "+r.error.message : "Payment removed"); if(!r.error){ await loadAll(); if(docInvId) showInvoice(docInvId, true); }
+  });
+
+  // ---- statement of account (deposit paid, balance outstanding) ----
+  function showStatement(id, quiet){
+    const i = invoices.find(x=>x.id===id); if(!i) return;
+    docInvId = id;
+    $("iListView").hidden = true; $("iEditView").hidden = true; $("iDocView").hidden = true; $("sDocView").hidden = false;
+    const q = invQuote(i), c = clientById(i.client_id)||{}, b = invBooking(i);
+    const fd = d => d ? d.replace(/-/g,"/") : "";
+    const rows = [];
+    let prevTotal = 0;
+    invoices.filter(x=>x.invoice_no===i.invoice_no && x.revision<=i.revision).sort((a,b)=>a.revision-b.revision).forEach(r=>{
+      const diff = Math.round((Number(r.total)-prevTotal)*100)/100; prevTotal = Number(r.total);
+      const label = r.revision===1 ? `Invoice ${r.invoice_no}${q.event_name?` · ${q.event_name}`:""}` : `Amended invoice ${r.invoice_no} rev ${r.revision}${r.amendment_note?` · ${r.amendment_note}`:""}`;
+      if(diff) rows.push({d:r.invoice_date, k:r.revision===1?-1:0, t:label, ch: diff>0?diff:0, cr: diff<0?-diff:0});
+    });
+    (b ? payments.filter(p=>p.booking_id===b.id) : []).forEach(p=>{
+      const a = Number(p.amount);
+      const t = (a<0 ? "Refund / correction" : p.method==="Opening balance" ? "Payments received" : "Payment received") + (p.method && p.method!=="Opening balance" && p.method!=="Adjustment" ? ` · ${p.method}` : p.method==="Adjustment" ? " · adjustment" : "") + (p.reference && p.method!=="Opening balance" && p.method!=="Adjustment" ? ` · ref ${p.reference}` : "");
+      rows.push({d:p.paid_on, k:1, t, ch: a<0?-a:0, cr: a>0?a:0});
+    });
+    rows.sort((x,y)=>(x.k===-1?-1:0)-(y.k===-1?-1:0) || x.d.localeCompare(y.d) || x.k-y.k);  // original invoice opens the statement, then everything by date
+    let run = 0; const charged = rows.reduce((s,r)=>s+r.ch,0), credited = rows.reduce((s,r)=>s+r.cr,0);
+    const bal = Math.round((charged-credited)*100)/100, total = Number(i.total), dep = total/2;
+    const paid = invPaid(i);
+    const depNote = paid + 0.005 >= dep ? `50% deposit (P${qm(dep)}) received.` : `50% deposit is P${qm(dep)}; P${qm(dep-paid)} of the deposit is still outstanding.`;
+    $("sdoc").innerHTML = `
+      <div class="qtop"><img src="logo.png" alt="Base Bush Lounge">
+        <div class="qno"><h2>STATEMENT OF ACCOUNT</h2>
+          <div><b>INVOICE: ${esc(i.invoice_no)}${i.revision>1?` (rev ${i.revision})`:""}</b></div><div><b>QUOTE REF: ${esc(q.quote_no||"")}</b></div>
+          ${q.client_ref?`<div><b>CLIENT REF: ${esc(q.client_ref)}</b></div>`:""}
+          <div>STATEMENT DATE: ${fd(todayISO())}</div>${i.due_date?`<div>BALANCE DUE BY: ${fd(i.due_date)}</div>`:""}</div></div>
+      ${docParties(c)}
+      ${docEvent({...q, start_date:q.start_date||i.invoice_date, end_date:q.end_date||i.invoice_date}, c)}
+      <div class="stmtsum"><div>Total invoiced<b>P${qm(charged)}</b></div><div>Paid to date<b>P${qm(credited)}</b></div><div>Balance due by<b>${i.due_date?nice(i.due_date,{day:"numeric",month:"short",year:"numeric"}):"event date"}</b></div><div>BALANCE DUE<b>P${qm(Math.max(0,bal))}</b></div></div>
+      <table class="stmt"><thead><tr><th style="width:84px">Date</th><th>Details</th><th class="r">Charges</th><th class="r">Payments</th><th class="r">Balance</th></tr></thead>
+        <tbody>${rows.map(r=>{ run = Math.round((run + r.ch - r.cr)*100)/100; return `<tr><td>${fd(r.d)}</td><td>${esc(r.t)}</td><td class="r">${r.ch?qm(r.ch):""}</td><td class="r">${r.cr?qm(r.cr):""}</td><td class="r">${run<0?"−":""}${qm(Math.abs(run))}</td></tr>`; }).join("")}</tbody>
+        <tfoot><tr><td></td><td>Balance due</td><td class="r">${qm(charged)}</td><td class="r">${qm(credited)}</td><td class="r">P${qm(Math.max(0,bal))}</td></tr></tfoot></table>
+      <div class="bottom">${DOC_BANK}
+        <div class="terms" style="margin:0"><h4>Notes</h4><ol>
+          <li>${depNote}</li>
+          <li>Please pay the balance of <b>P${qm(Math.max(0,bal))}</b>${i.due_date?` by ${nice(i.due_date,{day:"numeric",month:"long",year:"numeric"})}`:" before the event date"}, using <b>${esc(i.invoice_no)}</b> as your payment reference.</li>
+          <li>Queries: ${BBL_TEL} · ${BBL_EMAIL}</li></ol></div></div>
+      ${DOC_FOOT}`;
+    document.title = `Statement ${i.invoice_no} · Base Bush Lounge`;
+    if(!quiet) window.scrollTo(0,0);
+  }
+  $("idStatement").onclick = ()=>{ if(docInvId) showStatement(docInvId); };
+  $("sdBack").onclick = ()=>{ if(docInvId) showInvoice(docInvId); else showIList(); };
+  $("sdPrint").onclick = ()=>window.print();
   $("idPrint").onclick = ()=>window.print();
   $("idBack").onclick = ()=>{ showIList(); window.scrollTo(0,0); };
   $("idQuote").onclick = ()=>{ const i = invoices.find(x=>x.id===docInvId); if(!i) return; go("quotes"); showDoc(i.quote_id); };
@@ -2222,6 +2320,7 @@ input:disabled{opacity:.7}
   document.addEventListener("click", e=>{
     const vi = e.target.closest("[data-viewi]"); if(vi){ showInvoice(vi.dataset.viewi); return; }
     const ai = e.target.closest("[data-amendi]"); if(ai){ openAmend(ai.dataset.amendi); return; }
+    const si = e.target.closest("[data-stmti]"); if(si){ showStatement(si.dataset.stmti); return; }
     const mk = e.target.closest("[data-mkinv]"); if(mk){ createInvoice(mk.dataset.mkinv); return; }
   });
 
