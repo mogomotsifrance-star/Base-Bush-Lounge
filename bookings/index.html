@@ -2158,12 +2158,12 @@ input:disabled{opacity:.7}
         ${DOC_BANK}
         <div class="sums"><div><span>SUBTOTAL</span><span>${qm(i.subtotal)}</span></div><div><span>VAT${Number(i.vat_rate)?` (${Number(i.vat_rate)}%)`:""}</span><span>${qm(i.vat_amount)}</span></div>
           <div class="tot"><span>TOTAL</span><span>P${qm(i.total)}</span></div>
-          <div style="padding:6px 9px 0"><span>LESS: PAID TO DATE</span><span>${qm(paid)}</span></div>
-          <div class="bal"><span>BALANCE DUE</span><span>P${qm(Math.max(0,bal))}</span></div></div>
+          <div style="padding:6px 9px 0"><span>50% DEPOSIT</span><span>${qm(Number(i.total)/2)}</span></div></div>
       </div>
       <div class="terms"><h4>Payment terms</h4><ol>
         <li>Please use the invoice number <b>${esc(i.invoice_no)}</b> as your payment reference.</li>
-        <li>The balance is payable before the event date${i.due_date?` (${nice(i.due_date,{day:"numeric",month:"long",year:"numeric"})})`:""}.</li>
+        <li>A 50% deposit secures the booking date. The full amount is payable by ${i.due_date?nice(i.due_date,{day:"numeric",month:"long",year:"numeric"}):"the event date"}.</li>
+        <li>Payments received are shown on your statement of account, available on request.</li>
         <li>Additional items requested on the day are billed on an amended invoice.</li>
         <li>Queries: ${BBL_TEL} · ${BBL_EMAIL}</li></ol></div>
       ${DOC_FOOT}`;
