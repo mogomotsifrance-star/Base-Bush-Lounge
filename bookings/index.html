@@ -972,6 +972,7 @@ input:disabled{opacity:.7}
         <span style="flex:1"></span>
         <button type="button" id="idAmend">Amend invoice</button>
         <button type="button" id="idStatement">Statement</button>
+        <button type="button" class="ghost" id="idDelete" style="color:var(--danger)">Delete invoice</button>
         <button type="button" class="primary" id="idPrint">Print / save PDF</button>
       </div>
       <div class="panel" style="display:grid;gap:10px">
@@ -2172,6 +2173,7 @@ input:disabled{opacity:.7}
       + (isCurrent ? "" : ` <span class="pill super">Superseded. Send the latest revision to the client.</span>`);
     $("idAmend").hidden = !isCurrent; $("payForm").hidden = !b;
     $("idStatement").hidden = !canStatement(i);
+    $("idDelete").hidden = !isAdmin;
     $("payAmt").value = ""; $("payRef").value = ""; $("payDate").value = todayISO();
     $("payNote").textContent = b ? `Paid to date P ${qm(paid)} · balance due P ${qm(Math.max(0,bal))}${bal < -0.005 ? ` · overpaid by P ${qm(-bal)}` : ""}` : "";
     const pays = b ? payments.filter(p=>p.booking_id===b.id) : [];
@@ -2249,6 +2251,14 @@ input:disabled{opacity:.7}
   $("idBack").onclick = ()=>{ showIList(); window.scrollTo(0,0); };
   $("idQuote").onclick = ()=>{ const i = invoices.find(x=>x.id===docInvId); if(!i) return; go("quotes"); showDoc(i.quote_id); };
   $("idAmend").onclick = ()=>openAmend(docInvId);
+  $("idDelete").onclick = async ()=>{
+    const i = invoices.find(x=>x.id===docInvId); if(!i || !isAdmin) return;
+    const revs = invoices.filter(x=>x.invoice_no===i.invoice_no).length, q = invQuote(i);
+    if(!confirm(`Delete invoice ${i.invoice_no}${revs>1?` and all ${revs} revisions`:""}?\n\nThis can't be undone. Quote ${q.quote_no||""} stays confirmed and can be invoiced again (it will get a new invoice number). Payments recorded on the booking are kept.`)) return;
+    const r = await sb.rpc("delete_invoice", {p_invoice_no: i.invoice_no});
+    if(r.error){ toast("Couldn't delete: " + r.error.message); return; }
+    toast(`${i.invoice_no} deleted`); await loadAll(); showIList(); window.scrollTo(0,0);
+  };
 
   // ---- amend editor ----
   function openAmend(id){
