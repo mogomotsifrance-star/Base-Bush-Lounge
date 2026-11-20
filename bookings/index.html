@@ -970,6 +970,7 @@ input:disabled{opacity:.7}
           <button type="button" class="ghost" data-menu="menus/Base-Bush-Lounge-Events-Buffet-Menu.pdf" data-menuname="Base Bush Lounge - Events &amp; Buffet Menu.pdf">Buffet menu</button>
           <button type="button" class="ghost" data-menu="menus/Base-Bush-Lounge-Drinks-Menu.pdf" data-menuname="Base Bush Lounge - Drinks Menu.pdf">Drinks menu</button>
           <button type="button" class="ghost" id="qdContractDl" hidden>Contract</button>
+          <button type="button" class="ghost" id="qdHousePolicy" data-menu="menus/Base-Bush-Lounge-House-Booking-Policy-2026.pdf" data-menuname="Base Bush Lounge - House Booking Policy 2026.pdf" hidden>House policy</button>
         </span>
       </div>
       <p class="linknote" id="qdNote"></p>
@@ -2380,6 +2381,7 @@ input:disabled{opacity:.7}
     const ck = contractKind(q);
     $("qdContract").hidden = q.status!=="confirmed";
     $("qdContract").textContent = ck ? `Contract (${ck==="small"?"small":"large"} events)` : "Contract";
+    $("qdHousePolicy").hidden = q.area!=="House";   // House & deck bookings get the House Booking Policy
     const dl = $("qdContractDl"); dl.hidden = !ck || q.status==="declined";
     if(!(pdfPending && pdfPending.btn===dl)) dl.textContent = dl.dataset.label = ck ? `${ck==="small"?"Small":"Large"} Events contract` : "Contract";
     $("qdInvoice").textContent = inv ? `View invoice ${inv.invoice_no}` : "Create invoice";
