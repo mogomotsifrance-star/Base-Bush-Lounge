@@ -187,7 +187,10 @@ legend{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--
 .navlinks a[aria-current="page"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
 .navlinks a:focus-visible,.tile:focus-visible,.brand:focus-visible{outline:2px solid var(--leaf);outline-offset:2px}
 .view{display:grid;gap:20px}
-@media (max-width:560px){.nav .topbar{width:100%;justify-content:space-between}.navlinks{order:3;width:100%}.navlinks a{flex:1;text-align:center}}
+@media (max-width:560px){.nav .topbar{width:100%;justify-content:space-between}.navlinks{order:3;width:100%;min-width:0}.navlinks a{flex:1 1 0;min-width:0;text-align:center;padding:7px 4px;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+@media (max-width:360px){.navlinks a{font-size:12.5px;padding:7px 2px}}
+.navlinks a[data-nav="reports"][aria-current="page"]{color:var(--plum);box-shadow:inset 0 -2px 0 var(--plum),0 1px 2px rgba(0,0,0,.08)}
+html,body{max-width:100%;overflow-x:hidden}
 /* ---- home ---- */
 .hero{display:grid;gap:4px;padding-top:6px}
 .hero h1{font-size:clamp(1.8rem,4vw,2.5rem)}
@@ -385,6 +388,10 @@ input:disabled{opacity:.7}
 #vBody .jcform #jcDesc{grid-column:1 / -1}
 #vBody .jcform button{grid-column:auto}
 .ptitle{display:none}
+#ohForm{grid-template-columns:180px minmax(0,1fr) 120px auto}
+@media (max-width:700px){#ohForm{grid-template-columns:1fr 1fr}#ohForm #ohDesc{grid-column:1 / -1}#ohForm button{grid-column:1 / -1}}
+.rbar .rnav{flex-wrap:wrap;min-width:0}
+@media (max-width:420px){.rnav b{min-width:0;flex:1}.rbar .rnav{width:100%}#rNow{flex-basis:100%}#ohPanel .list-head .rnav{width:100%}#ohMonth{flex:1;min-width:0}}
 .printbtn{display:inline-flex}
 @media (pointer:coarse){.printbtn{display:none}}
 .t-head{display:flex;align-items:center;gap:10px}
@@ -571,7 +578,7 @@ input:disabled{opacity:.7}
       <a class="tile t-book" href="#bookings">
         <div class="t-head"><span class="t-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8 14h3v3H8z" class="f"/></svg></span><p class="eyebrow">Calendar</p></div>
         <h2>Bookings</h2>
-        <p class="sub">Check availability, hold dates, capture client details and track the 50% deposit.</p>
+        <p class="sub">Check availability, capture client details and track the 50% deposit.</p>
         <div class="tilefoot"><span><span class="big" id="t-upcoming">0</span>upcoming</span><span class="go">Open bookings →</span></div>
       </a>
       <a class="tile t-quote" href="#quotes">
@@ -1116,7 +1123,7 @@ input:disabled{opacity:.7}
         <div class="rnav"><button type="button" id="ohPrev" aria-label="Previous month">‹</button><input type="month" id="ohMonth" aria-label="Month" style="width:auto"><button type="button" id="ohNext" aria-label="Next month">›</button></div></div>
       <p class="hint">Running costs that don't belong to one job: salaries, rent, electricity, water, internet, maintenance, marketing and so on. Weekly reports take a share of the month by number of days.</p>
       <div class="paylist" id="ohList"></div>
-      <form class="jcform" id="ohForm" novalidate style="margin-top:10px;grid-template-columns:180px minmax(0,1fr) 120px auto">
+      <form class="jcform" id="ohForm" novalidate style="margin-top:10px">
         <select id="ohCat" aria-label="Category"></select>
         <input id="ohDesc" placeholder="Description (optional)" aria-label="Description">
         <input type="number" id="ohAmt" step="0.01" min="0" inputmode="decimal" class="money" placeholder="Amount (P)" aria-label="Amount (P)">
