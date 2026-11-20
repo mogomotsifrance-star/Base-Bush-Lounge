@@ -969,6 +969,7 @@ input:disabled{opacity:.7}
         <span class="menubtns" role="group" aria-label="Menus to send with the quote">
           <button type="button" class="ghost" data-menu="menus/Base-Bush-Lounge-Events-Buffet-Menu.pdf" data-menuname="Base Bush Lounge - Events &amp; Buffet Menu.pdf">Buffet menu</button>
           <button type="button" class="ghost" data-menu="menus/Base-Bush-Lounge-Drinks-Menu.pdf" data-menuname="Base Bush Lounge - Drinks Menu.pdf">Drinks menu</button>
+          <button type="button" class="ghost" id="qdContractDl" hidden>Contract</button>
         </span>
       </div>
       <p class="linknote" id="qdNote"></p>
@@ -2379,6 +2380,8 @@ input:disabled{opacity:.7}
     const ck = contractKind(q);
     $("qdContract").hidden = q.status!=="confirmed";
     $("qdContract").textContent = ck ? `Contract (${ck==="small"?"small":"large"} events)` : "Contract";
+    const dl = $("qdContractDl"); dl.hidden = !ck || q.status==="declined";
+    if(!(pdfPending && pdfPending.btn===dl)) dl.textContent = dl.dataset.label = ck ? `${ck==="small"?"Small":"Large"} Events contract` : "Contract";
     $("qdInvoice").textContent = inv ? `View invoice ${inv.invoice_no}` : "Create invoice";
     $("qdInvoice").className = inv ? "" : "primary";
     const dep = b ? ` Deposit received ${pula(b.deposit)} of ${pula(q.total/2)} due.` : "";
@@ -2555,21 +2558,17 @@ input:disabled{opacity:.7}
   const contractKind = q => { const g = quoteGuests(q); return g==null ? null : (g <= 50 ? "small" : "large"); };
   let docContractId = null;
 
-  function showContract(id, quiet){
-    const q = quotes.find(x=>x.id===id); if(!q) return;
-    if(q.status!=="confirmed"){ toast("Contracts are available once the quote is confirmed."); return; }
-    const kind = contractKind(q);
-    if(!kind){ toast("This quote has no guest number and no per-person items. Add the number of guests first, so the right contract (small or large events) can be chosen."); openQuote(q); $("q-guests").focus(); return; }
-    docContractId = id;
-    $("qListView").hidden = true; $("qEditView").hidden = true; $("qDocView").hidden = true; $("cDocView").hidden = false;
-    const C = CONTRACTS[kind], c = qClient(q), g = quoteGuests(q), b = bookings.find(x=>x.id===q.booking_id);
+  // The pre-filled contract (Small or Large Events T&Cs) for a quote, as HTML.
+  function contractHtml(q){
+    const kind = contractKind(q); if(!kind) return "";
+    const C = CONTRACTS[kind], c = qClient(q), g = quoteGuests(q);
     const inv = invoices.find(i=>i.quote_id===q.id && i.status==="current");
     const total = inv ? Number(inv.total) : Number(q.total);
     const clientName = c.company && c.name && c.company!==c.name ? `${c.company} (${c.name})` : (c.company || c.name || "");
     const item = it => typeof it === "string" ? `<p>${it}</p>`
       : it.table ? `<table class="ctab"><thead><tr>${it.table[0].map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${it.table.slice(1).map(r=>`<tr>${r.map(d=>`<td>${d}</td>`).join("")}</tr>`).join("")}</tbody></table>`
       : `<ul>${it.bullets.map(x=>`<li>${x}</li>`).join("")}</ul>`;
-    $("cdoc").innerHTML = `
+    return `
       <div class="qtop"><img src="logo.png" alt="Base Bush Lounge">
         <div class="qno"><h2>${C.title}</h2><div><b>BOOKING REF: ${esc(q.quote_no)}</b></div>${inv?`<div>INVOICE: ${esc(inv.invoice_no)}</div>`:""}<div>DATE: ${iso(new Date()).replace(/-/g,"/")}</div></div></div>
       <table class="evt" style="margin-top:18px"><thead><tr><th>Client</th><th>Event</th><th>Event date</th><th>Area</th><th class="c">Guests</th></tr></thead>
@@ -2587,6 +2586,16 @@ input:disabled{opacity:.7}
           <tr><td>Booking ref</td><td>${esc(q.quote_no)}</td><td>${esc(q.quote_no)}</td></tr>
         </tbody></table></div>
       ${DOC_FOOT}`;
+  }
+  function showContract(id, quiet){
+    const q = quotes.find(x=>x.id===id); if(!q) return;
+    if(q.status!=="confirmed"){ toast("Contracts are available once the quote is confirmed."); return; }
+    const kind = contractKind(q);
+    if(!kind){ toast("This quote has no guest number and no per-person items. Add the number of guests first, so the right contract (small or large events) can be chosen."); openQuote(q); $("q-guests").focus(); return; }
+    docContractId = id;
+    $("qListView").hidden = true; $("qEditView").hidden = true; $("qDocView").hidden = true; $("cDocView").hidden = false;
+    const C = CONTRACTS[kind], g = quoteGuests(q);
+    $("cdoc").innerHTML = contractHtml(q);
     const fg = fieldGuests(q), cg = chargedGuests(q);
     const src = cg!=null ? `charged for ${g} people on quote ${esc(q.quote_no)}${fg!=null && fg!==g ? ` (its No. of guests field says ${esc(q.guests_text)})` : ""}` : `${g} guest${g===1?"":"s"} on quote ${esc(q.quote_no)}`;
     $("cdNote").innerHTML = `<span class="pill confirmed">${esc(C.label)}</span> ${src}, so this is the ${kind==="small"?"Small":"Large"} Events contract. ${kind==="small"?"Over 50 guests":"50 guests or fewer"} would use the ${kind==="small"?"Large":"Small"} Events contract instead.`;
@@ -2598,6 +2607,14 @@ input:disabled{opacity:.7}
     savePdf($("cdoc"), `Contract ${fileSafe(q.quote_no)} - ${fileSafe(clientOf(q.client_id))}.pdf`, e.currentTarget); };
   $("cdPrint2").onclick = ()=>window.print();
   $("qdContract").onclick = ()=>{ if(docQuoteId) showContract(docQuoteId); };
+  // Download the relevant contract straight from the quote (Small ≤ 50 guests, Large > 50)
+  $("qdContractDl").onclick = e=>{
+    const q = quotes.find(x=>x.id===docQuoteId); if(!q) return;
+    const kind = contractKind(q);
+    if(!kind){ toast("Add the number of guests to the quote first, so the right contract can be chosen."); return; }
+    const el = document.createElement("div"); el.className = "qdoc"; el.innerHTML = contractHtml(q);
+    savePdf(el, `${kind==="small"?"Small":"Large"} Events Contract ${fileSafe(q.quote_no)} - ${fileSafe(clientOf(q.client_id))}.pdf`, e.currentTarget);
+  };
 
   // ================= INVOICES =================
   let iTab = "all", docInvId = null, iItems = [], iAmendingId = null;
