@@ -300,7 +300,6 @@ input:disabled{opacity:.7}
   font-weight:800;letter-spacing:.14em;line-height:1;opacity:.82;pointer-events:none;-webkit-print-color-adjust:exact;print-color-adjust:exact;background:rgba(255,255,255,.35)}
 .qdoc .paidstamp .w{font-size:44px}
 .qdoc .paidstamp .d{font-size:11px;letter-spacing:.08em;margin-top:5px;font-weight:700}
-@media (max-width:560px){.qdoc .paidstamp{top:26px;left:30%}.qdoc .paidstamp .w{font-size:30px}}
 .paylist{display:grid;gap:4px;font-size:13px}
 .paylist .pr{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card)}
 .paylist .pr .a{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:600}
@@ -314,7 +313,6 @@ input:disabled{opacity:.7}
 .qdoc .stmtsum div{padding:8px 10px;border-right:1px solid #111;font-size:11px}
 .qdoc .stmtsum div:last-child{border-right:0;background:#111;color:#fff}
 .qdoc .stmtsum b{display:block;font-size:14px;margin-top:2px}
-@media (max-width:560px){.qdoc .stmtsum{grid-template-columns:1fr 1fr}.qdoc .stmtsum div:nth-child(2){border-right:0}.qdoc .stmtsum div:nth-child(-n+2){border-bottom:1px solid #111}}
 .revs{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--muted)}
 .revs button{padding:3px 9px;min-height:0;font-size:12.5px}
 .revs button[aria-pressed="true"]{border-color:var(--leaf);color:var(--leaf);font-weight:600}
@@ -387,6 +385,8 @@ input:disabled{opacity:.7}
 #vBody .jcform #jcDesc{grid-column:1 / -1}
 #vBody .jcform button{grid-column:auto}
 .ptitle{display:none}
+.printbtn{display:inline-flex}
+@media (pointer:coarse){.printbtn{display:none}}
 .t-head{display:flex;align-items:center;gap:10px}
 .t-head .eyebrow{margin:0;color:var(--c);font-weight:600}
 .t-icon{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;background:var(--c)}
@@ -952,7 +952,8 @@ input:disabled{opacity:.7}
         <button type="button" class="primary" id="qdConfirm">Confirm booking</button>
         <button type="button" id="qdInvoice" hidden>Create invoice</button>
         <button type="button" id="qdContract" hidden>Contract</button>
-        <button type="button" id="qdPrint">Print / save PDF</button>
+        <button type="button" class="printbtn" id="qdPrint2">Print</button>
+        <button type="button" id="qdPrint">Download PDF</button>
       </div>
       <p class="linknote" id="qdNote"></p>
       <div class="docwrap"><div class="qdoc" id="qdoc"></div></div>
@@ -963,7 +964,8 @@ input:disabled{opacity:.7}
       <div class="docbar">
         <button type="button" id="cdBack">← Back to quote</button>
         <span style="flex:1"></span>
-        <button type="button" class="primary" id="cdPrint">Download / print contract (PDF)</button>
+        <button type="button" class="printbtn" id="cdPrint2">Print</button>
+        <button type="button" class="primary" id="cdPrint">Download contract (PDF)</button>
       </div>
       <p class="linknote" id="cdNote"></p>
       <div class="docwrap"><div class="qdoc" id="cdoc"></div></div>
@@ -1037,7 +1039,8 @@ input:disabled{opacity:.7}
         <button type="button" id="idAmend">Amend invoice</button>
         <button type="button" id="idStatement">Statement</button>
         <button type="button" class="ghost" id="idDelete" style="color:var(--danger)">Delete invoice</button>
-        <button type="button" class="primary" id="idPrint">Print / save PDF</button>
+        <button type="button" class="printbtn" id="idPrint2">Print</button>
+        <button type="button" class="primary" id="idPrint">Download PDF</button>
       </div>
       <div class="panel" style="display:grid;gap:10px">
         <div class="revs" id="idRevs"></div>
@@ -1060,7 +1063,8 @@ input:disabled{opacity:.7}
       <div class="docbar">
         <button type="button" id="sdBack">← Back to invoice</button>
         <span style="flex:1"></span>
-        <button type="button" class="primary" id="sdPrint">Download / print statement (PDF)</button>
+        <button type="button" class="printbtn" id="sdPrint2">Print</button>
+        <button type="button" class="primary" id="sdPrint">Download statement (PDF)</button>
       </div>
       <div class="docwrap"><div class="qdoc" id="sdoc"></div></div>
     </div>
@@ -1927,6 +1931,85 @@ input:disabled{opacity:.7}
     toast(r.error ? "Couldn't copy: "+r.error.message : `${src.length} overhead${src.length===1?"":"s"} copied — adjust any that changed`); if(!r.error) await loadAll();
   };
 
+
+  // ================= PDF DOWNLOAD (works on phones and in the installed app) =================
+  const PDF_LIBS = ["https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js", "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"];
+  const loadScript = src => new Promise((res, rej)=>{
+    const have = document.querySelector(`script[src="${src}"]`);
+    if(have){ if(have.dataset.ok) return res(); have.addEventListener("load", res); have.addEventListener("error", ()=>rej(new Error("load"))); return; }
+    const sc = document.createElement("script"); sc.src = src; sc.async = true;
+    sc.onload = ()=>{ sc.dataset.ok = "1"; res(); }; sc.onerror = ()=>{ sc.remove(); rej(new Error("load")); };
+    document.head.appendChild(sc);
+  });
+  const loadPdfLibs = async () => { for(const u of PDF_LIBS) await loadScript(u); };
+  let pdfPending = null;   // a finished PDF waiting for a tap (phones need a fresh tap to open the share sheet)
+  async function deliverPdf(file){
+    const coarse = matchMedia("(pointer:coarse)").matches;
+    if(coarse && navigator.canShare && navigator.canShare({files:[file]})){
+      try{ await navigator.share({files:[file], title:file.name}); return "shared"; }
+      catch(err){ if(err && err.name==="AbortError") return "cancelled"; if(err && err.name==="NotAllowedError") return "needtap"; }
+    }
+    const url = URL.createObjectURL(file), a = document.createElement("a");
+    a.href = url; a.download = file.name; a.rel = "noopener"; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 60000);
+    return "downloaded";
+  }
+  async function savePdf(el, name, btn){
+    if(pdfPending && pdfPending.btn===btn && pdfPending.file.name===name){
+      const f = pdfPending.file; pdfPending = null; btn.textContent = btn.dataset.label; await deliverPdf(f); return;
+    }
+    if(btn){ btn.dataset.label = btn.dataset.label || btn.textContent; btn.disabled = true; btn.textContent = "Preparing PDF…"; }
+    let host;
+    try{
+      await loadPdfLibs();
+      host = document.createElement("div");
+      host.style.cssText = "position:fixed;left:-12000px;top:0;width:794px;background:#fff;z-index:-1;pointer-events:none";
+      const clone = el.cloneNode(true);
+      clone.removeAttribute("id"); clone.classList.add("pdfclone");
+      clone.style.cssText += ";box-shadow:none;margin:0;position:relative;width:794px";
+      host.appendChild(clone); document.body.appendChild(host);
+      await Promise.all([...clone.querySelectorAll("img")].map(im=>im.complete ? 0 : new Promise(r=>{ im.onload = im.onerror = r; })));
+      if(document.fonts && document.fonts.ready) await document.fonts.ready;
+      const W = clone.offsetWidth, H = clone.scrollHeight, top0 = clone.getBoundingClientRect().top;
+      // safe places to start a new page: the bottom of rows, paragraphs, list items and blocks (never inside a table cell)
+      const cands = [...new Set([...clone.querySelectorAll("tr,p,li,table,img,div,ol,ul")]
+        .filter(n=>!n.closest("td,th") || n.tagName==="TR").map(n=>Math.round(n.getBoundingClientRect().bottom - top0)))]
+        .filter(y=>y>0 && y<H).sort((a,b)=>a-b);
+      const scale = Math.min(2, (window.devicePixelRatio||1) < 2 ? 2 : 2);
+      const canvas = await window.html2canvas(clone, {scale, backgroundColor:"#ffffff", useCORS:true, logging:false, windowWidth:900, width:W, height:H});
+      host.remove(); host = null;
+      const { jsPDF } = window.jspdf, pdf = new jsPDF({unit:"mm", format:"a4", compress:true});
+      const mmPerPx = 210 / W, firstH = (297 - 8) / mmPerPx, nextTop = 10, nextH = (297 - 8 - nextTop) / mmPerPx;
+      let y = 0, page = 0;
+      while(y < H - 4 && page < 30){
+        const room = page ? nextH : firstH;
+        let end = y + room;
+        if(end >= H) end = H;
+        else { const fit = cands.filter(c=>c > y + room*0.55 && c <= end); if(fit.length) end = fit[fit.length-1]; }
+        const sy = Math.round(y*scale), sh = Math.max(1, Math.round((end - y)*scale));
+        const slice = document.createElement("canvas"); slice.width = canvas.width; slice.height = sh;
+        const ctx = slice.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0,0,slice.width,sh);
+        ctx.drawImage(canvas, 0, sy, canvas.width, Math.min(sh, canvas.height - sy), 0, 0, canvas.width, Math.min(sh, canvas.height - sy));
+        if(page) pdf.addPage();
+        pdf.addImage(slice.toDataURL("image/jpeg", 0.92), "JPEG", 0, page ? nextTop : 0, 210, (end - y)*mmPerPx);
+        y = end; page++;
+      }
+      const file = new File([pdf.output("blob")], name, {type:"application/pdf"});
+      const how = await deliverPdf(file);
+      if(how==="needtap" && btn){ pdfPending = {file, btn}; btn.disabled = false; btn.textContent = "PDF ready — tap to save"; return; }
+      if(how==="downloaded") toast(`Saved ${name}`);
+    }catch(err){
+      console.error(err);
+      toast(err && err.message==="load" ? "Couldn't load the PDF tool. Check your internet connection and try again." : "Couldn't make the PDF. Try again, or use Print on a computer.");
+    }finally{
+      if(host) host.remove();
+      if(btn && !pdfPending){ btn.disabled = false; btn.textContent = btn.dataset.label; }
+      else if(btn) btn.disabled = false;
+    }
+  }
+  // warm the PDF tools up in the background so the first download is quick
+  setTimeout(()=>{ loadPdfLibs().catch(()=>{}); }, 6000);
+
   // ================= ROUTING =================
   function route(){
     const v = (location.hash||"#home").slice(1);
@@ -2270,7 +2353,11 @@ input:disabled{opacity:.7}
   }
   $("qdSent").onclick = ()=>setQuoteStatus("sent");
   $("qdConfirm").onclick = ()=>setQuoteStatus("confirmed");
-  $("qdPrint").onclick = ()=>window.print();
+  const fileSafe = t => String(t||"").replace(/[\\/:*?"<>|]+/g,"").replace(/\s+/g," ").trim().slice(0,80);
+  const clientOf = id => (clientById(id)||{}).name || "";
+  $("qdPrint").onclick = e=>{ const q = quotes.find(x=>x.id===docQuoteId); if(!q) return;
+    savePdf($("qdoc"), `${fileSafe(q.quote_no)} - ${fileSafe(clientOf(q.client_id))}.pdf`, e.currentTarget); };
+  $("qdPrint2").onclick = ()=>window.print();
   $("qdEdit").onclick = ()=>openQuote(quotes.find(x=>x.id===docQuoteId));
   $("qdBack").onclick = ()=>{ showQList(); window.scrollTo(0,0); };
 
@@ -2454,7 +2541,9 @@ input:disabled{opacity:.7}
     if(!quiet) window.scrollTo(0,0);
   }
   $("cdBack").onclick = ()=>{ if(docContractId){ const id = docContractId; docContractId = null; $("cDocView").hidden = true; showDoc(id); } else showQList(); };
-  $("cdPrint").onclick = ()=>window.print();
+  $("cdPrint").onclick = e=>{ const q = quotes.find(x=>x.id===docContractId); if(!q) return;
+    savePdf($("cdoc"), `Contract ${fileSafe(q.quote_no)} - ${fileSafe(clientOf(q.client_id))}.pdf`, e.currentTarget); };
+  $("cdPrint2").onclick = ()=>window.print();
   $("qdContract").onclick = ()=>{ if(docQuoteId) showContract(docQuoteId); };
 
   // ================= INVOICES =================
@@ -2622,8 +2711,12 @@ input:disabled{opacity:.7}
   }
   $("idStatement").onclick = ()=>{ if(docInvId) showStatement(docInvId); };
   $("sdBack").onclick = ()=>{ if(docInvId) showInvoice(docInvId); else showIList(); };
-  $("sdPrint").onclick = ()=>window.print();
-  $("idPrint").onclick = ()=>window.print();
+  $("sdPrint").onclick = e=>{ const i = invoices.find(x=>x.id===docInvId); if(!i) return;
+    savePdf($("sdoc"), `Statement ${fileSafe(i.invoice_no)} - ${fileSafe(clientOf(i.client_id))}.pdf`, e.currentTarget); };
+  $("idPrint").onclick = e=>{ const i = invoices.find(x=>x.id===docInvId); if(!i) return;
+    savePdf($("idoc"), `${fileSafe(i.invoice_no)}${i.revision>1?` rev ${i.revision}`:""} - ${fileSafe(clientOf(i.client_id))}.pdf`, e.currentTarget); };
+  $("sdPrint2").onclick = ()=>window.print();
+  $("idPrint2").onclick = ()=>window.print();
   $("idBack").onclick = ()=>{ showIList(); window.scrollTo(0,0); };
   $("idQuote").onclick = ()=>{ const i = invoices.find(x=>x.id===docInvId); if(!i) return; go("quotes"); showDoc(i.quote_id); };
   $("idAmend").onclick = ()=>openAmend(docInvId);
