@@ -645,7 +645,7 @@ input:disabled{opacity:.7}
     <div style="display:grid;gap:8px;justify-items:start">
       <div class="legend">
         <span><i class="sw conf"></i>Confirmed (deposit paid)</span>
-        <span><i class="sw quot"></i>Quoted (date held)</span>
+        <span><i class="sw quot"></i>Quoted (not yet confirmed)</span>
         <span><i class="sw inq"></i>Inquired</span>
         <span><i class="sw canc"></i>Cancelled</span>
       </div>
@@ -751,7 +751,7 @@ input:disabled{opacity:.7}
             <div class="row">
               <label>Guests<input type="number" id="f-guests" min="0" inputmode="numeric"></label>
               <label>Status
-                <select id="f-status"><option value="inquired">Inquired</option><option value="quoted">Quoted (holds the date)</option><option value="confirmed">Confirmed</option><option value="cancelled">Cancelled</option></select>
+                <select id="f-status"><option value="inquired">Inquired</option><option value="quoted">Quoted</option><option value="confirmed">Confirmed</option><option value="cancelled">Cancelled</option></select>
               </label>
             </div>
             <div class="row">
@@ -828,7 +828,7 @@ input:disabled{opacity:.7}
   <div class="view" id="quotesView" hidden>
     <div class="view" id="qListView">
       <header>
-        <div><h1>Quotes</h1><p class="sub">A sent quote holds the date on the calendar. Confirming it confirms the booking.</p></div>
+        <div><h1>Quotes</h1><p class="sub">Several clients can be quoted for the same area and date. Only a confirmed booking takes the slot; confirming a quote confirms the booking.</p></div>
         <button class="primary" id="newQuoteBtn">New quote</button>
       </header>
       <section class="panel list-panel">
@@ -912,7 +912,7 @@ input:disabled{opacity:.7}
                 <label>Valid (days)<input type="number" id="q-valid" min="1" max="365" inputmode="numeric"></label>
               </div>
               <label>Status
-                <select id="q-status"><option value="draft">Draft (calendar: inquired)</option><option value="sent">Sent (holds the date)</option><option value="confirmed">Confirmed (booking confirmed)</option><option value="declined">Declined (frees the date)</option></select>
+                <select id="q-status"><option value="draft">Draft (calendar: inquired)</option><option value="sent">Sent (calendar: quoted)</option><option value="confirmed">Confirmed (booking confirmed)</option><option value="declined">Declined (frees the date)</option></select>
               </label>
               <div id="qClash" class="clash" hidden></div>
               <p class="hint warn" id="qInvNote" hidden></p>
@@ -1157,7 +1157,10 @@ input:disabled{opacity:.7}
   const areaOptions = `<option value="" disabled>Choose an area…</option>` + AREAS.map(a=>`<option value="${esc(a)}">${esc(AREA_LABEL[a])}</option>`).join("");
   const SESS = {full:"Full day", day:"Daytime", evening:"Evening"};
   const STAT = {inquired:"Inquired", quoted:"Quoted", confirmed:"Confirmed", cancelled:"Cancelled"};
-  const HOLDS = st => st==="quoted" || st==="confirmed";
+  // Only a CONFIRMED booking takes a slot. Several quotes can compete for the same area and date;
+  // a quote can't be sent (and nothing can be confirmed) where another booking is already confirmed.
+  const HOLDS = st => st==="confirmed";
+  const ACTIVE = st => st==="quoted" || st==="confirmed";
   // Airbnb's calendar can't say whether a stay is still a request, so Airbnb stays are "held" until staff mark them accepted.
   const stLabel = b => b && b.source==="airbnb" ? ({quoted:"Airbnb · awaiting acceptance", confirmed:"Airbnb · accepted", cancelled:"Airbnb · cancelled"}[b.status] || STAT[b.status]) : STAT[b?.status];
   let listTab = "all";
@@ -1177,22 +1180,23 @@ input:disabled{opacity:.7}
   function short(s){ return nice(s,{day:"numeric",month:"short"}); }
   function pula(n){ return "P " + Number(n||0).toLocaleString("en-GB",{maximumFractionDigits:0}); }
   function esc(s){ return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
-  function toast(msg){ const t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>t.hidden=true,3000); }
+  function toast(msg){ const t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>t.hidden=true,Math.max(3000,String(msg).length*55)); }
   function notice(msg){ const n=$("notice"); n.hidden=!msg; n.textContent=msg||""; }
   function show(v){ ["authView","deniedView","appView"].forEach(id=>$(id).hidden = id!==v); }
 
   $("f-area").innerHTML = areaOptions;
 
   // Same rule the database enforces; used to warn before saving.
-  function clashes(a,b){
+  function overlaps(a,b){
     if(!a.area || !b.area) return false;
-    if(!HOLDS(a.status)||!HOLDS(b.status)) return false;
     if(a.end < b.start || b.end < a.start) return false;
     if(!(a.area===b.area || a.area===ENTIRE || b.area===ENTIRE)) return false;
     if(a.start!==a.end || b.start!==b.end || a.session==="full" || b.session==="full") return true;
     return a.session===b.session;
   }
+  const clashes = (a,b) => ACTIVE(a.status) && HOLDS(b.status) && overlaps(a,b);
   const findClashes = (c, list) => list.filter(b=>b.id!==c.id && clashes(c,b));
+  const rivals = (c, list) => list.filter(b=>b.id!==c.id && (b.status==="quoted" || b.status==="inquired") && overlaps(c,b));
   const onDate = s => bookings.filter(b=>b.start<=s && s<=b.end).sort((a,b)=>(a.status==="cancelled")-(b.status==="cancelled"));
   const clientById = id => clients.find(c=>c.id===id);
 
@@ -1308,13 +1312,15 @@ input:disabled{opacity:.7}
     $("dayDlgTitle").textContent = nice(s);
     const live = list.filter(b=>b.status!=="cancelled");
     $("dayDlgSub").textContent = live.length ? `${live.length} booking${live.length===1?"":"s"} on this day` : "No bookings on this day";
-    // What's still free in each area (quoted/confirmed hold an area; Entire venue holds all three)
+    // Each area: booked (confirmed), quoted (still open — others can quote too) or free. Entire venue covers every area.
     $("dayAvail").innerHTML = ["House","Conference","Restaurant","Garden"].map(a=>{
       const here = live.filter(b=>b.area===a || b.area===ENTIRE);
-      const hold = here.filter(b=>HOLDS(b.status));
-      const cls = hold.some(b=>b.status==="confirmed") ? "taken" : hold.length ? "held" : "free";
-      const txt = hold.length ? (cls==="taken" ? "Booked: " : "Held: ") + hold.map(b=>`${b.client}${b.session!=="full"?` (${SESS[b.session].toLowerCase()})`:""}`).join(", ")
-        : here.length ? `Free · ${here.length} inquiry` : "Free";
+      const who = arr => arr.map(b=>`${b.client}${b.session!=="full"?` (${SESS[b.session].toLowerCase()})`:""}`).join(", ");
+      const conf = here.filter(b=>b.status==="confirmed"), quo = here.filter(b=>b.status==="quoted"), inq = here.filter(b=>b.status==="inquired");
+      const cls = conf.length ? "taken" : quo.length ? "held" : "free";
+      const txt = conf.length ? "Booked: " + who(conf)
+        : quo.length ? `Open · quoted to ${who(quo)}`
+        : inq.length ? `Free · ${inq.length} inquir${inq.length===1?"y":"ies"}` : "Free";
       return `<div class="${cls}"><b>${esc(areaName(a))}</b><span>${esc(txt)}</span></div>`;
     }).join("");
     $("dayDlgList").innerHTML = list.length ? list.map(bkCard).join("") : `<div class="empty">Nothing booked on this day yet.</div>`;
@@ -1477,7 +1483,7 @@ input:disabled{opacity:.7}
     $("vAccept").textContent = "Accepted on Airbnb";
     $("vAirbnb").hidden = !(abnb && resUrl); if(resUrl) $("vAirbnb").href = resUrl;
     if(abnb) $("vBody").insertAdjacentHTML("afterbegin", b.status==="quoted"
-      ? `<p class="hint warn"><span class="pill airbnb">Airbnb</span> Airbnb's calendar shows this stay as reserved, but it can't say whether it's still a request. The date is held. Once you accept it in Airbnb, press “Accepted on Airbnb”. If it's declined or expires, it disappears here within 30 minutes.</p>`
+      ? `<p class="hint warn"><span class="pill airbnb">Airbnb</span> Airbnb's calendar shows this stay as reserved, but it can't say whether it's still a request, so it isn't confirmed yet. Once you accept it in Airbnb, press “Accepted on Airbnb”. If it's declined or expires, it disappears here within 30 minutes.</p>`
       : `<p class="hint"><span class="pill airbnb">Airbnb</span> Accepted Airbnb stay. Change or cancel it in Airbnb; the calendar updates within 30 minutes.</p>`);
     $("vInvoice").hidden = !inv; if(inv) $("vInvoice").textContent = `View invoice ${inv.invoice_no}`;
     $("viewPanel").hidden = false;
@@ -1524,7 +1530,7 @@ input:disabled{opacity:.7}
     const el=$("clash");
     if(!list.length){ el.hidden=true; $("saveBtn").disabled=false; return; }
     el.hidden=false; $("saveBtn").disabled=true;
-    el.innerHTML = `<b>Double booking.</b> This overlaps ${list.map(b=>`${esc(b.client)} (${esc(areaName(b.area))}, ${stLabel(b).toLowerCase()}, ${short(b.start)}${b.end!==b.start?" – "+short(b.end):""})`).join("; ")}. Change the date, area or session, or cancel the other booking first.`;
+    el.innerHTML = `<b>Already confirmed.</b> This slot is confirmed for ${list.map(b=>`${esc(b.client)} (${esc(areaName(b.area))}, ${short(b.start)}${b.end!==b.start?" – "+short(b.end):""})`).join("; ")}. Change the date, area or session, keep this as an inquiry, or cancel the other booking first.`;
   }
   function liveCheck(){
     const c=readForm(); depositHint(c);
@@ -1533,13 +1539,11 @@ input:disabled{opacity:.7}
     showClash(hard);
     // Inquiries don't hold dates, but flag any overlap so nobody is surprised.
     const sn = $("softNote");
-    const soft = (!hard.length && c.start && c.status!=="cancelled") ? bookings.filter(b=>b.id!==c.id && b.status!=="cancelled" &&
-      clashes({...c,status:"quoted"},{...b,status:"quoted"})) : [];
-    sn.hidden = !soft.length;
-    if(soft.length) sn.textContent = (c.status==="inquired"
-      ? "Heads up: this slot is also wanted by "
-      : "Other inquiries for this slot: ") + soft.map(b=>`${b.client} (${stLabel(b).toLowerCase()})`).join(", ") +
-      (c.status==="inquired" && soft.some(b=>HOLDS(b.status)) ? ". It's already held, so this one can't be quoted unless that booking is cancelled." : ".");
+    const conf = (!hard.length && c.start && c.status==="inquired") ? bookings.filter(b=>b.id!==c.id && HOLDS(b.status) && overlaps(c,b)) : [];
+    const soft = (!hard.length && c.start && c.status!=="cancelled") ? rivals(c, bookings) : [];
+    sn.hidden = !soft.length && !conf.length;
+    if(conf.length) sn.textContent = `Heads up: ${conf.map(b=>b.client).join(", ")} ${conf.length>1?"are":"is"} already confirmed for this slot, so this one can't be quoted unless that booking moves or is cancelled.`;
+    else if(soft.length) sn.textContent = `Also quoted / inquired for this slot: ${soft.map(b=>`${b.client} (${stLabel(b).toLowerCase()})`).join(", ")}. You can still quote; whoever confirms first gets it.`;
   }
   ["f-area","f-session","f-start","f-end","f-status","f-total","f-deposit"].forEach(id=>$(id).addEventListener("input", ()=>{
     if(id==="f-start" && (!$("f-end").value || $("f-end").value<$("f-start").value)) $("f-end").value=$("f-start").value;
@@ -1577,7 +1581,7 @@ input:disabled{opacity:.7}
           guests:c.guests ? String(c.guests) : "", status:{inquired:"draft", quoted:"sent", confirmed:"confirmed", cancelled:"draft"}[c.status]});
       }
     }catch(err){
-      if(err?.code==="23P01"){ await loadAll(); toast("Not saved: someone has just booked that slot."); }
+      if(err?.code==="23P01"){ await loadAll(); toast("Not saved: that slot is already confirmed for another client."); }
       else toast("Couldn't save: " + (err?.message || "check your connection and try again."));
     }finally{ $("saveBtn").textContent = "Save booking"; if(!$("formPanel").hidden) liveCheck(); }
   }
@@ -2239,13 +2243,15 @@ input:disabled{opacity:.7}
     const cand = {id:linked||"__new", area:f.area, session:f.session, start:f.start, end:f.end, status:Q2B[f.status]};
     const hit = f.start ? findClashes(cand, bookings) : [];
     if(!hit.length){
-      const soft = f.start && f.status==="draft" ? findClashes({...cand,status:"quoted"}, bookings) : [];
-      el.hidden = !soft.length;
-      if(soft.length) el.innerHTML = `<b>Heads up.</b> ${soft.map(b=>esc(b.client)).join(", ")} already ${soft.length>1?"hold":"holds"} this slot. You can save the draft, but it can't be sent until that booking moves or is cancelled.`;
+      const conf = f.start && f.status==="draft" ? findClashes({...cand,status:"quoted"}, bookings) : [];
+      const soft = f.start && f.status!=="declined" ? rivals(cand, bookings) : [];
+      el.hidden = !conf.length && !soft.length;
+      if(conf.length) el.innerHTML = `<b>Heads up.</b> ${conf.map(b=>esc(b.client)).join(", ")} ${conf.length>1?"are":"is"} already confirmed for this slot. You can save the draft, but it can't be sent until that booking moves or is cancelled.`;
+      else if(soft.length) el.innerHTML = `<b>Also quoted.</b> ${soft.map(b=>`${esc(b.client)} (${stLabel(b).toLowerCase()})`).join(", ")} ${soft.length>1?"are":"is"} also after this slot. You can still send this quote; whoever confirms first gets the date.`;
       return true;
     }
     el.hidden=false;
-    el.innerHTML = `<b>Double booking.</b> This slot is already held by ${hit.map(b=>`${esc(b.client)} (${esc(areaName(b.area))}, ${stLabel(b).toLowerCase()}, ${short(b.start)})`).join("; ")}. Change the date, area or session, or keep this quote as a draft.`;
+    el.innerHTML = `<b>Already confirmed.</b> This slot is confirmed for ${hit.map(b=>`${esc(b.client)} (${esc(areaName(b.area))}, ${short(b.start)})`).join("; ")}. Change the date, area or session, or keep this quote as a draft.`;
     return false;
   }
   ["q-area","q-session","q-start","q-end","q-status"].forEach(id=>$(id).addEventListener("input", ()=>{
@@ -2277,7 +2283,7 @@ input:disabled{opacity:.7}
       await loadAll();
       if(thenView) showDoc(r.data.id); else openQuote(quotes.find(x=>x.id===r.data.id));
     }catch(err){
-      if(err?.code==="23P01"){ await loadAll(); qCheck(); toast("Not saved: someone has just booked that slot."); }
+      if(err?.code==="23P01"){ await loadAll(); qCheck(); toast("Not saved: that slot is already confirmed for another client."); }
       else toast("Couldn't save: " + (err?.message || "check your connection and try again."));
     }finally{ $("qSave").disabled = $("qSaveView").disabled = false; }
   }
@@ -2347,8 +2353,12 @@ input:disabled{opacity:.7}
   async function setQuoteStatus(status){
     const q = quotes.find(x=>x.id===docQuoteId); if(!q) return;
     const r = await sb.from("quotes").update({status}).eq("id", q.id);
-    if(r.error){ toast(r.error.code==="23P01" ? "Can't do that: the date is already held by another booking." : "Couldn't update: "+r.error.message); return; }
-    toast(status==="confirmed" ? `${q.quote_no} confirmed. The booking is confirmed on the calendar.` : `${q.quote_no} marked as sent. The date is now held.`);
+    if(r.error){ toast(r.error.code==="23P01" ? "Can't do that: this slot is already confirmed for another client." : "Couldn't update: "+r.error.message); return; }
+    let msg = status==="confirmed" ? `${q.quote_no} confirmed. The booking is confirmed on the calendar.` : `${q.quote_no} marked as sent.`;
+    if(status==="confirmed" && q.booking_id){ const b = bookings.find(x=>x.id===q.booking_id);
+      const others = b ? bookings.filter(x=>x.id!==b.id && x.status==="quoted" && overlaps(b,x)) : [];
+      if(others.length) msg += ` Let ${others.map(x=>x.client).join(", ")} know: ${others.length>1?"their quotes are":"their quote is"} for the same slot.`; }
+    toast(msg);
     await loadAll(); showDoc(q.id, true);
   }
   $("qdSent").onclick = ()=>setQuoteStatus("sent");
