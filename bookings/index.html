@@ -388,6 +388,11 @@ input:disabled{opacity:.7}
 #vBody .jcform #jcDesc{grid-column:1 / -1}
 #vBody .jcform button{grid-column:auto}
 .ptitle{display:none}
+.menubtns{display:inline-flex;gap:6px;align-items:center;padding-left:8px;margin-left:2px;border-left:1px solid var(--line)}
+.menubtns button::before{content:"";display:inline-block;width:14px;height:14px;margin-right:6px;vertical-align:-2px;background:currentColor;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v12'/%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3Cpath d='M5 21h14'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v12'/%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3Cpath d='M5 21h14'/%3E%3C/svg%3E") center/contain no-repeat}
+@media (max-width:560px){.menubtns{border-left:0;padding-left:0;margin-left:0;width:100%}.menubtns button{flex:1}}
 #ohForm{grid-template-columns:180px minmax(0,1fr) 120px auto}
 @media (max-width:700px){#ohForm{grid-template-columns:1fr 1fr}#ohForm #ohDesc{grid-column:1 / -1}#ohForm button{grid-column:1 / -1}}
 .rbar .rnav{flex-wrap:wrap;min-width:0}
@@ -961,6 +966,10 @@ input:disabled{opacity:.7}
         <button type="button" id="qdContract" hidden>Contract</button>
         <button type="button" class="printbtn" id="qdPrint2">Print</button>
         <button type="button" id="qdPrint">Download PDF</button>
+        <span class="menubtns" role="group" aria-label="Menus to send with the quote">
+          <button type="button" class="ghost" data-menu="menus/Base-Bush-Lounge-Events-Buffet-Menu.pdf" data-menuname="Base Bush Lounge - Events &amp; Buffet Menu.pdf">Buffet menu</button>
+          <button type="button" class="ghost" data-menu="menus/Base-Bush-Lounge-Drinks-Menu.pdf" data-menuname="Base Bush Lounge - Drinks Menu.pdf">Drinks menu</button>
+        </span>
       </div>
       <p class="linknote" id="qdNote"></p>
       <div class="docwrap"><div class="qdoc" id="qdoc"></div></div>
@@ -2018,6 +2027,26 @@ input:disabled{opacity:.7}
       else if(btn) btn.disabled = false;
     }
   }
+  // ---- menus sent alongside a quote (static PDFs in bookings/menus/) ----
+  async function sendMenu(btn){
+    const name = btn.dataset.menuname;
+    if(pdfPending && pdfPending.btn===btn){ const f = pdfPending.file; pdfPending = null; btn.textContent = btn.dataset.label; await deliverPdf(f); return; }
+    btn.dataset.label = btn.dataset.label || btn.textContent; btn.disabled = true; btn.textContent = "Getting menu…";
+    try{
+      const r = await fetch(btn.dataset.menu, {cache:"no-cache"});
+      if(!r.ok) throw new Error(r.status===404 ? "missing" : "net");
+      const file = new File([await r.blob()], name, {type:"application/pdf"});
+      const how = await deliverPdf(file);
+      if(how==="needtap"){ pdfPending = {file, btn}; btn.disabled = false; btn.textContent = "Menu ready — tap to save"; return; }
+      if(how==="downloaded") toast(`Saved ${name}`);
+    }catch(err){
+      toast(err.message==="missing" ? "That menu hasn't been added to the system yet." : "Couldn't get the menu. Check your internet connection and try again.");
+    }finally{
+      if(!(pdfPending && pdfPending.btn===btn)){ btn.disabled = false; btn.textContent = btn.dataset.label; }
+    }
+  }
+  document.querySelectorAll("[data-menu]").forEach(b=>b.addEventListener("click", ()=>sendMenu(b)));
+
   // warm the PDF tools up in the background so the first download is quick
   setTimeout(()=>{ loadPdfLibs().catch(()=>{}); }, 6000);
 
