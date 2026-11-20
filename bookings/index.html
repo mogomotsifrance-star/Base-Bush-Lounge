@@ -2546,7 +2546,12 @@ input:disabled{opacity:.7}
     ]},
   };
   // Guest count = the highest number in "No. of guests" (e.g. "20 – 23" → 23). 50 or fewer → small events; more → large.
-  const quoteGuests = q => { const n = String(q?.guests_text||"").match(/\d+/g); return n ? Math.max(...n.map(Number)) : null; };
+  // Guests for the contract = the number of people actually charged on the quote (per-person lines);
+  // if the quote has no per-person lines, use its "No. of guests" field.
+  const PER_HEAD_RE = /per person|per guest|\(pp\)|buffet|lunch|dinner|breakfast|tea break|welcome (drinks|snack)/i;
+  const fieldGuests = q => { const n = String(q?.guests_text||"").match(/\d+/g); return n ? Math.max(...n.map(Number)) : null; };
+  const chargedGuests = q => { const qs = (q?.items||[]).filter(i=>PER_HEAD_RE.test(i.description||"") && Number(i.qty)>0).map(i=>Math.round(Number(i.qty))); return qs.length ? Math.max(...qs) : null; };
+  const quoteGuests = q => chargedGuests(q) ?? fieldGuests(q);
   const contractKind = q => { const g = quoteGuests(q); return g==null ? null : (g <= 50 ? "small" : "large"); };
   let docContractId = null;
 
@@ -2554,7 +2559,7 @@ input:disabled{opacity:.7}
     const q = quotes.find(x=>x.id===id); if(!q) return;
     if(q.status!=="confirmed"){ toast("Contracts are available once the quote is confirmed."); return; }
     const kind = contractKind(q);
-    if(!kind){ toast("Add the number of guests to the quote first, so the right contract (small or large events) can be chosen."); openQuote(q); $("q-guests").focus(); return; }
+    if(!kind){ toast("This quote has no guest number and no per-person items. Add the number of guests first, so the right contract (small or large events) can be chosen."); openQuote(q); $("q-guests").focus(); return; }
     docContractId = id;
     $("qListView").hidden = true; $("qEditView").hidden = true; $("qDocView").hidden = true; $("cDocView").hidden = false;
     const C = CONTRACTS[kind], c = qClient(q), g = quoteGuests(q), b = bookings.find(x=>x.id===q.booking_id);
@@ -2569,7 +2574,7 @@ input:disabled{opacity:.7}
         <div class="qno"><h2>${C.title}</h2><div><b>BOOKING REF: ${esc(q.quote_no)}</b></div>${inv?`<div>INVOICE: ${esc(inv.invoice_no)}</div>`:""}<div>DATE: ${iso(new Date()).replace(/-/g,"/")}</div></div></div>
       <table class="evt" style="margin-top:18px"><thead><tr><th>Client</th><th>Event</th><th>Event date</th><th>Area</th><th class="c">Guests</th></tr></thead>
         <tbody><tr><td>${esc(clientName)}${q.end_client?`<br>For ${esc(q.end_client)}`:""}</td><td>${esc(q.event_type)}</td><td>${esc(qDates(q))}</td>
-        <td>Base Bush Lounge - ${esc(areaName(q.area))}</td><td class="c">${esc(q.guests_text||String(g))}</td></tr></tbody></table>
+        <td>Base Bush Lounge - ${esc(areaName(q.area))}</td><td class="c">${g}</td></tr></tbody></table>
       <table class="evt"><thead><tr><th>Hire fee (total)</th><th>50% deposit to secure the date</th><th>Balance</th><th>Balance due</th></tr></thead>
         <tbody><tr><td>P${qm(total)}</td><td>P${qm(total/2)}</td><td>P${qm(total/2)}</td><td>${kind==="small"?"7":"14"} days before the event</td></tr></tbody></table>
       <div class="cterms">${C.sections.map(([h, items])=>`<section><h4>${h}</h4>${items.map(item).join("")}</section>`).join("")}</div>
@@ -2582,7 +2587,9 @@ input:disabled{opacity:.7}
           <tr><td>Booking ref</td><td>${esc(q.quote_no)}</td><td>${esc(q.quote_no)}</td></tr>
         </tbody></table></div>
       ${DOC_FOOT}`;
-    $("cdNote").innerHTML = `<span class="pill confirmed">${esc(C.label)}</span> ${g} guest${g===1?"":"s"} on quote ${esc(q.quote_no)}, so this is the ${kind==="small"?"Small":"Large"} Events contract. ${kind==="small"?"Over 50 guests":"50 guests or fewer"} would use the ${kind==="small"?"Large":"Small"} Events contract instead.`;
+    const fg = fieldGuests(q), cg = chargedGuests(q);
+    const src = cg!=null ? `charged for ${g} people on quote ${esc(q.quote_no)}${fg!=null && fg!==g ? ` (its No. of guests field says ${esc(q.guests_text)})` : ""}` : `${g} guest${g===1?"":"s"} on quote ${esc(q.quote_no)}`;
+    $("cdNote").innerHTML = `<span class="pill confirmed">${esc(C.label)}</span> ${src}, so this is the ${kind==="small"?"Small":"Large"} Events contract. ${kind==="small"?"Over 50 guests":"50 guests or fewer"} would use the ${kind==="small"?"Large":"Small"} Events contract instead.`;
     document.title = `Contract ${q.quote_no} · Base Bush Lounge`;
     if(!quiet) window.scrollTo(0,0);
   }
