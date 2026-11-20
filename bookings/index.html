@@ -2030,12 +2030,12 @@ input:disabled{opacity:.7}
     }
   }
   // ---- menus sent alongside a quote (static PDFs in bookings/menus/) ----
-  async function sendMenu(btn){
-    const name = btn.dataset.menuname;
+  async function sendMenu(btn, file){
+    const name = file ? file.name : btn.dataset.menuname, url = file ? file.url : btn.dataset.menu;
     if(pdfPending && pdfPending.btn===btn){ const f = pdfPending.file; pdfPending = null; btn.textContent = btn.dataset.label; await deliverPdf(f); return; }
     btn.dataset.label = btn.dataset.label || btn.textContent; btn.disabled = true; btn.textContent = "Getting menu…";
     try{
-      const r = await fetch(btn.dataset.menu, {cache:"no-cache"});
+      const r = await fetch(url, {cache:"no-cache"});
       if(!r.ok) throw new Error(r.status===404 ? "missing" : "net");
       const file = new File([await r.blob()], name, {type:"application/pdf"});
       const how = await deliverPdf(file);
@@ -2157,13 +2157,13 @@ input:disabled{opacity:.7}
       <td style="white-space:nowrap">${esc(qDates(x))}</td><td>${esc(x.event_type)}</td><td>${esc(x.area)}</td>
       <td class="num">${pula(x.total)}</td>
       <td><span class="pill ${x.status}">${QSTAT[x.status]}</span></td>
-      <td style="white-space:nowrap"><button type="button" data-viewq="${esc(x.id)}">View</button> <button type="button" data-editq="${esc(x.id)}">Edit</button>${x.status==="confirmed"?` <button type="button" data-contract="${esc(x.id)}">Contract</button>`:""}</td></tr>`).join("")
+      <td style="white-space:nowrap"><button type="button" data-viewq="${esc(x.id)}">View</button> <button type="button" data-editq="${esc(x.id)}">Edit</button>${x.status==="confirmed"?` <button type="button" data-contract="${esc(x.id)}">${contractKind(x)==="house"?"House policy":"Contract"}</button>`:""}</td></tr>`).join("")
       : `<tr><td colspan="8">${empty}</td></tr>`;
     $("qCards").innerHTML = list.length ? list.map(x=>{ const c=qClient(x); return `<div class="bcard">
       <div class="top"><strong>${esc(x.quote_no)} · ${esc(c.company||c.name||"—")}</strong><span class="pill ${x.status}">${QSTAT[x.status]}</span></div>
       <div class="meta">${esc(qDates(x))} · ${esc(x.area)} · ${esc(x.event_type)}</div>
       <div class="meta">Total ${pula(x.total)}${x.guests_text?` · ${esc(x.guests_text)} guests`:""}</div>
-      <div class="actions"><button type="button" data-viewq="${esc(x.id)}">View</button><button type="button" data-editq="${esc(x.id)}">Edit</button>${x.status==="confirmed"?`<button type="button" data-contract="${esc(x.id)}">Contract</button>`:""}</div></div>`; }).join("") : empty;
+      <div class="actions"><button type="button" data-viewq="${esc(x.id)}">View</button><button type="button" data-editq="${esc(x.id)}">Edit</button>${x.status==="confirmed"?`<button type="button" data-contract="${esc(x.id)}">${contractKind(x)==="house"?"House policy":"Contract"}</button>`:""}</div></div>`; }).join("") : empty;
   }
   $("qtabs").addEventListener("click", e=>{ const t=e.target.closest("[data-qtab]"); if(!t) return; qTab=t.dataset.qtab;
     $("qtabs").querySelectorAll("[data-qtab]").forEach(x=>x.setAttribute("aria-selected", x===t?"true":"false")); renderQuotes(); });
@@ -2380,9 +2380,9 @@ input:disabled{opacity:.7}
     $("qdInvoice").hidden = !(inv || q.status==="confirmed");
     const ck = contractKind(q);
     $("qdContract").hidden = q.status!=="confirmed";
-    $("qdContract").textContent = ck ? `Contract (${ck==="small"?"small":"large"} events)` : "Contract";
-    $("qdHousePolicy").hidden = q.area!=="House";   // House & deck bookings get the House Booking Policy
-    const dl = $("qdContractDl"); dl.hidden = !ck || q.status==="declined";
+    $("qdContract").textContent = ck==="house" ? "Contract (House policy)" : `Contract (${ck==="small"?"small":"large"} events)`;
+    $("qdHousePolicy").hidden = ck!=="house" || q.status==="declined";   // no guest number = House booking → House Booking Policy
+    const dl = $("qdContractDl"); dl.hidden = ck==="house" || q.status==="declined";
     if(!(pdfPending && pdfPending.btn===dl)) dl.textContent = dl.dataset.label = ck ? `${ck==="small"?"Small":"Large"} Events contract` : "Contract";
     $("qdInvoice").textContent = inv ? `View invoice ${inv.invoice_no}` : "Create invoice";
     $("qdInvoice").className = inv ? "" : "primary";
@@ -2418,7 +2418,8 @@ input:disabled{opacity:.7}
   document.addEventListener("click", async e=>{
     const nv = e.target.closest('[data-nav="quotes"]'); if(nv && location.hash==="#quotes"){ showQList(); return; }
     const ni = e.target.closest('[data-nav="invoices"]'); if(ni && location.hash==="#invoices"){ showIList(); return; }
-    const ct = e.target.closest("[data-contract]"); if(ct){ showContract(ct.dataset.contract); return; }
+    const ct = e.target.closest("[data-contract]"); if(ct){ const q = quotes.find(x=>x.id===ct.dataset.contract);
+      if(q && contractKind(q)==="house") sendMenu(ct, HOUSE_POLICY); else showContract(ct.dataset.contract); return; }
     const vq = e.target.closest("[data-viewq]"); if(vq){ showDoc(vq.dataset.viewq); return; }
     const eq = e.target.closest("[data-editq]"); if(eq){ openQuote(quotes.find(x=>x.id===eq.dataset.editq)); return; }
     const oq = e.target.closest("[data-openquote]"); if(oq){ const id=oq.dataset.openquote; go("quotes"); showDoc(id); return; }
@@ -2557,8 +2558,9 @@ input:disabled{opacity:.7}
   const fieldGuests = q => { const n = String(q?.guests_text||"").match(/\d+/g); return n ? Math.max(...n.map(Number)) : null; };
   const chargedGuests = q => { const qs = (q?.items||[]).filter(i=>PER_HEAD_RE.test(i.description||"") && Number(i.qty)>0).map(i=>Math.round(Number(i.qty))); return qs.length ? Math.max(...qs) : null; };
   const quoteGuests = q => chargedGuests(q) ?? fieldGuests(q);
-  // No guest number on the quote → Small Events (the House holds at most 6 people; other areas default to small too).
-  const contractKind = q => { const g = quoteGuests(q); return g==null ? "small" : (g <= 50 ? "small" : "large"); };
+  // Only House bookings have no guest number: those get the House Booking Policy instead of an events contract.
+  const contractKind = q => { const g = quoteGuests(q); return g==null ? "house" : (g <= 50 ? "small" : "large"); };
+  const HOUSE_POLICY = {url:"menus/Base-Bush-Lounge-House-Booking-Policy-2026.pdf", name:"Base Bush Lounge - House Booking Policy 2026.pdf"};
   const guestsLabel = q => { const g = quoteGuests(q); return g!=null ? String(g) : (q.area==="House" ? "Up to 6 (House)" : "Not stated"); };
   let docContractId = null;
 
@@ -2595,7 +2597,7 @@ input:disabled{opacity:.7}
     const q = quotes.find(x=>x.id===id); if(!q) return;
     if(q.status!=="confirmed"){ toast("Contracts are available once the quote is confirmed."); return; }
     const kind = contractKind(q);
-    if(!kind){ toast("This quote has no guest number and no per-person items. Add the number of guests first, so the right contract (small or large events) can be chosen."); openQuote(q); $("q-guests").focus(); return; }
+    if(kind==="house"){ sendMenu(houseBtn(), HOUSE_POLICY); return; }
     docContractId = id;
     $("qListView").hidden = true; $("qEditView").hidden = true; $("qDocView").hidden = true; $("cDocView").hidden = false;
     const C = CONTRACTS[kind], g = quoteGuests(q);
@@ -2612,12 +2614,14 @@ input:disabled{opacity:.7}
   $("cdPrint").onclick = e=>{ const q = quotes.find(x=>x.id===docContractId); if(!q) return;
     savePdf($("cdoc"), `Contract ${fileSafe(q.quote_no)} - ${fileSafe(clientOf(q.client_id))}.pdf`, e.currentTarget); };
   $("cdPrint2").onclick = ()=>window.print();
-  $("qdContract").onclick = ()=>{ if(docQuoteId) showContract(docQuoteId); };
+  const houseBtn = () => $("qdHousePolicy");
+  $("qdContract").onclick = e=>{ if(!docQuoteId) return; const q = quotes.find(x=>x.id===docQuoteId);
+    if(q && contractKind(q)==="house") sendMenu(e.currentTarget, HOUSE_POLICY); else showContract(docQuoteId); };
   // Download the relevant contract straight from the quote (Small ≤ 50 guests, Large > 50)
   $("qdContractDl").onclick = e=>{
     const q = quotes.find(x=>x.id===docQuoteId); if(!q) return;
     const kind = contractKind(q);
-    if(!kind){ toast("Add the number of guests to the quote first, so the right contract can be chosen."); return; }
+    if(kind==="house"){ sendMenu(e.currentTarget, HOUSE_POLICY); return; }
     const el = document.createElement("div"); el.className = "qdoc"; el.innerHTML = contractHtml(q);
     savePdf(el, `${kind==="small"?"Small":"Large"} Events Contract ${fileSafe(q.quote_no)} - ${fileSafe(clientOf(q.client_id))}.pdf`, e.currentTarget);
   };
