@@ -230,6 +230,14 @@ html,body{max-width:100%;overflow-x:hidden}
 }
 .itemtools{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .itemtools select{width:auto;flex:1 1 240px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.discrow{display:flex;gap:6px;align-items:flex-end}
+.discrow select{width:auto}
+.discrow input{max-width:120px}
+.discwarn{grid-column:1 / -1;margin:6px 0 0;padding:8px 10px;border-radius:8px;background:var(--amber-tint,#fdf3dc);color:var(--ink);font-size:13px;max-width:420px;justify-self:end}
+.discwarn.ok{background:var(--leaf-tint,#e4f2e8)}
+.approvebar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 12px;padding:10px 14px;border-radius:12px;background:var(--amber-tint,#fdf3dc);border:1px solid var(--line)}
+.approvebar b{font-weight:700}
 .qtotals{display:grid;grid-template-columns:auto auto;gap:4px 20px;justify-content:end;font-variant-numeric:tabular-nums;margin-top:12px}
 .qtotals .t{font-weight:700;font-size:1.1rem;padding-top:6px;border-top:1px solid var(--line)}
 .qtotals span:nth-child(even){text-align:right}
@@ -939,6 +947,10 @@ input:disabled{opacity:.7}
           <p class="hint">Click any description to swap it for another item on the price list (the price updates too), or type your own. Use “+ Add line item” for a new line.</p>
           <datalist id="priceOptions"></datalist>
           <div class="row" style="margin-top:14px;align-items:start">
+            <div class="discrow">
+              <label>Discount<select id="q-disctype" aria-label="Discount type"><option value="amount">P (amount)</option><option value="percent">% (percent)</option></select></label>
+              <label><span class="vh">Discount value</span><input type="number" id="q-discval" min="0" step="0.01" inputmode="decimal" placeholder="0"></label>
+            </div>
             <label>VAT %<input type="number" id="q-vatrate" min="0" max="100" step="0.5" inputmode="decimal" style="max-width:120px"></label>
             <div class="qtotals" id="qTotals"></div>
           </div>
@@ -973,6 +985,7 @@ input:disabled{opacity:.7}
           <button type="button" class="ghost" id="qdHousePolicy" data-menu="menus/Base-Bush-Lounge-House-Booking-Policy-2026.pdf" data-menuname="Base Bush Lounge - House Booking Policy 2026.pdf" hidden>House policy</button>
         </span>
       </div>
+      <div class="approvebar" id="qdApprove" hidden><span id="qdApproveTxt"></span><span style="flex:1"></span><button type="button" class="primary" id="qdApproveBtn" hidden>Approve discount</button></div>
       <p class="linknote" id="qdNote"></p>
       <div class="docwrap"><div class="qdoc" id="qdoc"></div></div>
     </div>
@@ -2156,11 +2169,11 @@ input:disabled{opacity:.7}
       <td style="min-width:150px">${who(x)}</td>
       <td style="white-space:nowrap">${esc(qDates(x))}</td><td>${esc(x.event_type)}</td><td>${esc(x.area)}</td>
       <td class="num">${pula(x.total)}</td>
-      <td><span class="pill ${x.status}">${QSTAT[x.status]}</span></td>
+      <td><span class="pill ${x.status}">${QSTAT[x.status]}</span>${needsApproval(x)?` <span class="pill due">Discount needs approval</span>`:""}</td>
       <td style="white-space:nowrap"><button type="button" data-viewq="${esc(x.id)}">View</button> <button type="button" data-editq="${esc(x.id)}">Edit</button>${x.status==="confirmed"?` <button type="button" data-contract="${esc(x.id)}">${contractKind(x)==="house"?"House policy":"Contract"}</button>`:""}</td></tr>`).join("")
       : `<tr><td colspan="8">${empty}</td></tr>`;
     $("qCards").innerHTML = list.length ? list.map(x=>{ const c=qClient(x); return `<div class="bcard">
-      <div class="top"><strong>${esc(x.quote_no)} · ${esc(c.company||c.name||"—")}</strong><span class="pill ${x.status}">${QSTAT[x.status]}</span></div>
+      <div class="top"><strong>${esc(x.quote_no)} · ${esc(c.company||c.name||"—")}</strong><span class="pill ${x.status}">${QSTAT[x.status]}</span></div>${needsApproval(x)?`<div><span class="pill due">Discount needs approval</span></div>`:""}
       <div class="meta">${esc(qDates(x))} · ${esc(x.area)} · ${esc(x.event_type)}</div>
       <div class="meta">Total ${pula(x.total)}${x.guests_text?` · ${esc(x.guests_text)} guests`:""}</div>
       <div class="actions"><button type="button" data-viewq="${esc(x.id)}">View</button><button type="button" data-editq="${esc(x.id)}">Edit</button>${x.status==="confirmed"?`<button type="button" data-contract="${esc(x.id)}">${contractKind(x)==="house"?"House policy":"Contract"}</button>`:""}</div></div>`; }).join("") : empty;
@@ -2219,7 +2232,8 @@ input:disabled{opacity:.7}
     $("q-session").value = q?.session || opts.session || "full";
     $("q-start").value = q?.start_date || opts.start || selected; $("q-end").value = q?.end_date || opts.end || opts.start || selected;
     $("q-guests").value = q?.guests_text || opts.guests || ""; $("q-date").value = q?.quote_date || iso(new Date()); $("q-valid").value = q?.valid_days || 30;
-    $("q-status").value = q?.status || opts.status || "draft"; $("q-vatrate").value = q ? Number(q.vat_rate) : 0; $("q-notes").value = q?.notes||"";
+    $("q-status").value = q?.status || opts.status || "draft"; $("q-vatrate").value = q ? Number(q.vat_rate) : 0;
+    $("q-disctype").value = q?.discount_type || "amount"; $("q-discval").value = q && Number(q.discount_value) ? Number(q.discount_value) : ""; $("q-notes").value = q?.notes||"";
     qItems = q ? (q.items||[]).map(i=>({qty:Number(i.qty)||0, description:i.description||"", unit_price:Number(i.unit_price)||0})) : [{qty:1, description:"", unit_price:0}];
     const qi = q && invoices.find(x=>x.quote_id===q.id && x.status==="current");
     $("qInvNote").hidden = !qi;
@@ -2237,10 +2251,31 @@ input:disabled{opacity:.7}
       : `<div class="empty">No line items yet. Use “+ Add line item” below.</div>`);
     qTotals();
   }
+  // Discounts: an amount in Pula or a percentage of the subtotal. Above 15% needs a supervisor (enforced in the database too).
+  const DISC_LIMIT = 15;
+  const fmtPct = p => `${Math.round(p*100)/100}%`;
+  function discCalc(sub, type, val){
+    val = Math.max(0, Number(val)||0);
+    const amount = type==="percent" ? Math.round(sub*Math.min(val,100))/100 : Math.min(val, Math.max(sub,0));
+    const pct = sub>0 ? amount/sub*100 : 0;
+    return {amount, pct, label: type==="percent" ? `(${Math.round(val*100)/100}%)` : (amount ? `(${fmtPct(pct)})` : "")};
+  }
+  const discLabel = x => x.discount_type==="percent" ? `${Math.round(Number(x.discount_value)*100)/100}%` : (Number(x.subtotal)>0 ? fmtPct(Number(x.discount_amount)/Number(x.subtotal)*100) : "");
+  const needsApproval = x => { const sub = Number(x.subtotal); if(!(sub>0) || !Number(x.discount_amount)) return false;
+    const pct = Number(x.discount_amount)/sub*100; return pct > DISC_LIMIT + 0.001 && !(x.discount_approved_pct!=null && pct <= Number(x.discount_approved_pct) + 0.001); };
+  const discMsg = err => /DISCOUNT_APPROVAL/.test(err?.message||"") ? err.message.replace(/^.*DISCOUNT_APPROVAL:\s*/,"") : null;
   function qTotals(){
     const sub = qItems.reduce((a,i)=>a+Math.round(i.qty*i.unit_price*100)/100,0);
-    const vr = Number($("q-vatrate").value||0), vat = Math.round(sub*vr)/100;
-    $("qTotals").innerHTML = `<span>Subtotal</span><span>P ${qm(sub)}</span><span>VAT ${vr?`(${vr}%)`:""}</span><span>P ${qm(vat)}</span><span class="t">Total</span><span class="t">P ${qm(sub+vat)}</span>`;
+    const vr = Number($("q-vatrate").value||0);
+    const d = discCalc(sub, $("q-disctype").value, Number($("q-discval").value||0)), net = sub - d.amount, vat = Math.round(net*vr)/100;
+    const q = quotes.find(x=>x.id===qEditingId);
+    const approved = q && q.discount_approved_pct!=null && d.pct <= Number(q.discount_approved_pct) + 0.001;
+    $("qTotals").innerHTML = `<span>Subtotal</span><span>P ${qm(sub)}</span>`
+      + (d.amount ? `<span>Discount ${d.label}</span><span>− P ${qm(d.amount)}</span>` : "")
+      + `<span>VAT ${vr?`(${vr}%)`:""}</span><span>P ${qm(vat)}</span><span class="t">Total</span><span class="t">P ${qm(net+vat)}</span>`
+      + (d.pct > DISC_LIMIT ? `<p class="discwarn${isAdmin||approved?" ok":""}">${isAdmin ? `This discount is ${fmtPct(d.pct)} of the subtotal. You're a supervisor, so saving approves it.`
+          : approved ? `Discount of ${fmtPct(d.pct)} approved by a supervisor.`
+          : `This discount is ${fmtPct(d.pct)} of the subtotal. Discounts above ${DISC_LIMIT}% need a supervisor's approval: save the quote as a <b>draft</b>, then ask a supervisor to approve it before it's sent.`}</p>` : "");
     $("qBarTotal").textContent = `Total P ${qm(sub+vat)} · deposit (50%) P ${qm((sub+vat)/2)}`;
   }
   $("qItems").addEventListener("input", e=>{
@@ -2268,6 +2303,7 @@ input:disabled{opacity:.7}
     renderItems();
   });
   $("q-vatrate").addEventListener("input", qTotals);
+  $("q-discval").addEventListener("input", qTotals); $("q-disctype").addEventListener("change", qTotals);
   $("qeJump").onclick = ()=>$("qItemsPanel").scrollIntoView({behavior:"smooth", block:"start"});
 
   function qForm(){
@@ -2312,7 +2348,8 @@ input:disabled{opacity:.7}
       else { const r = await sb.from("clients").insert(clientRow).select("id").single(); if(r.error) throw r.error; cid = r.data.id; qClientId = cid; }
       const row = {client_id:cid, end_client:v("q-endclient"), client_ref:v("q-ref"), event_type:$("q-type").value, area:f.area, session:f.session,
         start_date:f.start, end_date:f.end, guests_text:v("q-guests"), quote_date:$("q-date").value || iso(new Date()),
-        valid_days:Number($("q-valid").value||30), status:f.status, items, vat_rate:Number($("q-vatrate").value||0), notes:v("q-notes")};
+        valid_days:Number($("q-valid").value||30), status:f.status, items, vat_rate:Number($("q-vatrate").value||0), notes:v("q-notes"),
+        discount_type:$("q-disctype").value, discount_value:Math.max(0, Number($("q-discval").value||0))};
       const r = qEditingId ? await sb.from("quotes").update(row).eq("id", qEditingId).select().single()
                            : await sb.from("quotes").insert(qLinkBooking ? {...row, booking_id:qLinkBooking} : row).select().single();
       if(r.error) throw r.error;
@@ -2322,6 +2359,7 @@ input:disabled{opacity:.7}
       if(thenView) showDoc(r.data.id); else openQuote(quotes.find(x=>x.id===r.data.id));
     }catch(err){
       if(err?.code==="23P01"){ await loadAll(); qCheck(); toast("Not saved: that slot is already confirmed for another client."); }
+      else if(discMsg(err)) toast("Not saved: " + discMsg(err));
       else toast("Couldn't save: " + (err?.message || "check your connection and try again."));
     }finally{ $("qSave").disabled = $("qSaveView").disabled = false; }
   }
@@ -2367,7 +2405,7 @@ input:disabled{opacity:.7}
       ${docParties(c)}${docEvent(q,c)}${docLines(q.items||[])}${DOC_CORKAGE}
       <div class="bottom">
         ${DOC_BANK}
-        <div class="sums"><div><span>SUBTOTAL</span><span>${qm(q.subtotal)}</span></div><div><span>VAT${Number(q.vat_rate)?` (${Number(q.vat_rate)}%)`:""}</span><span>${qm(q.vat_amount)}</span></div>
+        <div class="sums"><div><span>SUBTOTAL</span><span>${qm(q.subtotal)}</span></div>${Number(q.discount_amount)?`<div><span>LESS: DISCOUNT (${discLabel(q)})</span><span>-${qm(q.discount_amount)}</span></div>`:""}<div><span>VAT${Number(q.vat_rate)?` (${Number(q.vat_rate)}%)`:""}</span><span>${qm(q.vat_amount)}</span></div>
           <div class="tot"><span>TOTAL</span><span>P${qm(q.total)}</span></div></div>
       </div>
       <div class="terms"><h4>Terms and Conditions</h4><ol>
@@ -2388,13 +2426,16 @@ input:disabled{opacity:.7}
     $("qdInvoice").className = inv ? "" : "primary";
     const dep = b ? ` Deposit received ${pula(b.deposit)} of ${pula(q.total/2)} due.` : "";
     $("qdNote").innerHTML = `<span class="pill ${q.status}">${QSTAT[q.status]}</span> ${inv ? `Invoiced as <b>${esc(inv.invoice_no)}</b>${inv.revision>1?` (revision ${inv.revision})`:""}. ` : ""}${b ? `On the calendar as <b>${stLabel(b).toLowerCase()}</b>.${q.status==="confirmed"?dep:""} <button type="button" data-gocal="${esc(b.id)}">Show on calendar</button>` : ""}`;
+    const na = needsApproval(q);
+    $("qdApprove").hidden = !na; $("qdApproveBtn").hidden = !isAdmin;
+    if(na) $("qdApproveTxt").innerHTML = `<b>Discount awaiting approval.</b> ${esc(discLabel(q))} off (P ${qm(q.discount_amount)}) is above ${DISC_LIMIT}%. ${isAdmin ? "Approve it so the quote can be sent." : "A supervisor must approve it before this quote can be sent or confirmed."}`;
     $("qdSent").hidden = q.status!=="draft"; $("qdConfirm").hidden = q.status==="confirmed" || q.status==="declined";
     if(!quiet) window.scrollTo(0,0);
   }
   async function setQuoteStatus(status){
     const q = quotes.find(x=>x.id===docQuoteId); if(!q) return;
     const r = await sb.from("quotes").update({status}).eq("id", q.id);
-    if(r.error){ toast(r.error.code==="23P01" ? "Can't do that: this slot is already confirmed for another client." : "Couldn't update: "+r.error.message); return; }
+    if(r.error){ toast(r.error.code==="23P01" ? "Can't do that: this slot is already confirmed for another client." : discMsg(r.error) ? discMsg(r.error).replace(/ Save it as a draft and/," Please") : "Couldn't update: "+r.error.message); return; }
     let msg = status==="confirmed" ? `${q.quote_no} confirmed. The booking is confirmed on the calendar.` : `${q.quote_no} marked as sent.`;
     if(status==="confirmed" && q.booking_id){ const b = bookings.find(x=>x.id===q.booking_id);
       const others = b ? bookings.filter(x=>x.id!==b.id && x.status==="quoted" && overlaps(b,x)) : [];
@@ -2402,6 +2443,11 @@ input:disabled{opacity:.7}
     toast(msg);
     await loadAll(); showDoc(q.id, true);
   }
+  $("qdApproveBtn").onclick = async ()=>{
+    const q = quotes.find(x=>x.id===docQuoteId); if(!q || !isAdmin) return;
+    const r = await sb.rpc("approve_quote_discount", {p_quote:q.id});
+    toast(r.error ? "Couldn't approve: "+r.error.message : `Discount on ${q.quote_no} approved`); if(!r.error){ await loadAll(); showDoc(q.id, true); }
+  };
   $("qdSent").onclick = ()=>setQuoteStatus("sent");
   $("qdConfirm").onclick = ()=>setQuoteStatus("confirmed");
   const fileSafe = t => String(t||"").replace(/[\\/:*?"<>|]+/g,"").replace(/\s+/g," ").trim().slice(0,80);
@@ -2702,7 +2748,7 @@ input:disabled{opacity:.7}
       ${docEvent(evq,c)}${docLines(i.items||[])}
       <div class="bottom">
         ${DOC_BANK}
-        <div class="sums"><div><span>SUBTOTAL</span><span>${qm(i.subtotal)}</span></div><div><span>VAT${Number(i.vat_rate)?` (${Number(i.vat_rate)}%)`:""}</span><span>${qm(i.vat_amount)}</span></div>
+        <div class="sums"><div><span>SUBTOTAL</span><span>${qm(i.subtotal)}</span></div>${Number(i.discount_amount)?`<div><span>LESS: DISCOUNT (${discLabel(i)})</span><span>-${qm(i.discount_amount)}</span></div>`:""}<div><span>VAT${Number(i.vat_rate)?` (${Number(i.vat_rate)}%)`:""}</span><span>${qm(i.vat_amount)}</span></div>
           <div class="tot"><span>TOTAL</span><span>P${qm(i.total)}</span></div>
           <div style="padding:6px 9px 0"><span>50% DEPOSIT</span><span>${qm(Number(i.total)/2)}</span></div></div>
       </div>
@@ -2836,11 +2882,14 @@ input:disabled{opacity:.7}
   }
   function iTotals(){
     const sub = iItems.reduce((a,i)=>a+Math.round(i.qty*i.unit_price*100)/100,0);
-    const vr = Number($("i-vatrate").value||0), vat = Math.round(sub*vr)/100;
-    const old = invoices.find(x=>x.id===iAmendingId), diff = old ? sub+vat-Number(old.total) : 0;
-    $("iTotals").innerHTML = `<span>Subtotal</span><span>P ${qm(sub)}</span><span>VAT ${vr?`(${vr}%)`:""}</span><span>P ${qm(vat)}</span><span class="t">New total</span><span class="t">P ${qm(sub+vat)}</span>`
+    const old = invoices.find(x=>x.id===iAmendingId);
+    const d = old ? discCalc(sub, old.discount_type, Number(old.discount_value)) : {amount:0,label:""};
+    const vr = Number($("i-vatrate").value||0), vat = Math.round((sub-d.amount)*vr)/100, tot = sub - d.amount + vat;
+    const diff = old ? tot-Number(old.total) : 0;
+    $("iTotals").innerHTML = `<span>Subtotal</span><span>P ${qm(sub)}</span>` + (d.amount ? `<span>Discount ${d.label}</span><span>− P ${qm(d.amount)}</span>` : "")
+      + `<span>VAT ${vr?`(${vr}%)`:""}</span><span>P ${qm(vat)}</span><span class="t">New total</span><span class="t">P ${qm(tot)}</span>`
       + (old ? `<span class="meta">Change</span><span class="meta">${diff>=0?"+":"−"} P ${qm(Math.abs(diff))}</span>` : "");
-    $("iBarTotal").textContent = `New total P ${qm(sub+vat)}`;
+    $("iBarTotal").textContent = `New total P ${qm(tot)}`;
   }
   $("iItems").addEventListener("input", e=>{
     const row = e.target.closest("[data-ii]"); if(!row) return; const i = +row.dataset.ii, f = e.target.dataset.f;
