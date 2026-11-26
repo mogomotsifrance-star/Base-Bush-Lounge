@@ -974,6 +974,7 @@ input:disabled{opacity:.7}
         <span style="flex:1"></span>
         <button type="button" id="qdSent">Mark as sent</button>
         <button type="button" class="primary" id="qdConfirm">Confirm booking</button>
+        <button type="button" id="qdUnconfirm" hidden>Undo confirmation</button>
         <button type="button" id="qdInvoice" hidden>Create invoice</button>
         <button type="button" id="qdContract" hidden>Contract</button>
         <button type="button" class="printbtn" id="qdPrint2">Print</button>
@@ -2360,6 +2361,7 @@ input:disabled{opacity:.7}
     }catch(err){
       if(err?.code==="23P01"){ await loadAll(); qCheck(); toast("Not saved: that slot is already confirmed for another client."); }
       else if(discMsg(err)) toast("Not saved: " + discMsg(err));
+      else if(unconfirmMsg(err)) toast("Not saved: " + unconfirmMsg(err));
       else toast("Couldn't save: " + (err?.message || "check your connection and try again."));
     }finally{ $("qSave").disabled = $("qSaveView").disabled = false; }
   }
@@ -2429,6 +2431,7 @@ input:disabled{opacity:.7}
     const na = needsApproval(q);
     $("qdApprove").hidden = !na; $("qdApproveBtn").hidden = !isAdmin;
     if(na) $("qdApproveTxt").innerHTML = `<b>Discount awaiting approval.</b> ${esc(discLabel(q))} off (P ${qm(q.discount_amount)}) is above ${DISC_LIMIT}%. ${isAdmin ? "Approve it so the quote can be sent." : "A supervisor must approve it before this quote can be sent or confirmed."}`;
+    $("qdUnconfirm").hidden = q.status!=="confirmed";
     $("qdSent").hidden = q.status!=="draft"; $("qdConfirm").hidden = q.status==="confirmed" || q.status==="declined";
     if(!quiet) window.scrollTo(0,0);
   }
@@ -2447,6 +2450,27 @@ input:disabled{opacity:.7}
     const q = quotes.find(x=>x.id===docQuoteId); if(!q || !isAdmin) return;
     const r = await sb.rpc("approve_quote_discount", {p_quote:q.id});
     toast(r.error ? "Couldn't approve: "+r.error.message : `Discount on ${q.quote_no} approved`); if(!r.error){ await loadAll(); showDoc(q.id, true); }
+  };
+  // Reverse a confirmation made by mistake: quote back to Sent, booking back to Quoted (date freed).
+  const unconfirmMsg = err => /UNCONFIRM_INVOICED/.test(err?.message||"") ? err.message.replace(/^.*UNCONFIRM_INVOICED:\s*/,"") : null;
+  $("qdUnconfirm").onclick = async ()=>{
+    const q = quotes.find(x=>x.id===docQuoteId); if(!q || q.status!=="confirmed") return;
+    const inv = invoices.find(i=>i.quote_id===q.id && i.status==="current");
+    const paid = q.booking_id ? payments.filter(p=>p.booking_id===q.booking_id).reduce((a,p)=>a+Number(p.amount),0) : 0;
+    if(inv && !isAdmin){ toast(`${q.quote_no} has invoice ${inv.invoice_no}. Ask a supervisor to delete the invoice first, then undo the confirmation.`); return; }
+    const lines = [`Undo the confirmation of ${q.quote_no}?`, "", "The quote goes back to Sent and the booking back to Quoted, so the date is no longer held."];
+    if(inv) lines.push("", `Its invoice ${inv.invoice_no} (all revisions) will be deleted. This can't be undone.`);
+    if(paid > 0.005) lines.push("", `P ${qm(paid)} recorded as paid stays on the booking. Refund or adjust it separately if needed.`);
+    if(!confirm(lines.join("\n"))) return;
+    $("qdUnconfirm").disabled = true;
+    try{
+      if(inv){ const d = await sb.rpc("delete_invoice", {p_invoice_no: inv.invoice_no}); if(d.error) throw d.error; }
+      const r = await sb.from("quotes").update({status:"sent"}).eq("id", q.id);
+      if(r.error) throw r.error;
+      toast(`Confirmation undone: ${q.quote_no} is back to Sent${inv?` and ${inv.invoice_no} was deleted`:""}.`);
+      await loadAll(); showDoc(q.id, true);
+    }catch(err){ toast(unconfirmMsg(err) || ("Couldn't undo: " + (err?.message || "check your connection."))); await loadAll(); showDoc(q.id, true); }
+    finally{ $("qdUnconfirm").disabled = false; }
   };
   $("qdSent").onclick = ()=>setQuoteStatus("sent");
   $("qdConfirm").onclick = ()=>setQuoteStatus("confirmed");
